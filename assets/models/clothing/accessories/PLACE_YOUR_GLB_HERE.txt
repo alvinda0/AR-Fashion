@@ -1,0 +1,23 @@
+📁 LETAKKAN FILE GLB AKSESORIS ANDA DI SINI
+
+Contoh:
+- my_hat.glb
+- glasses.glb
+- necklace.glb
+- watch.glb
+
+Setelah menempatkan file GLB, update:
+lib/services/fashion_data_service.dart
+
+Contoh entry:
+FashionItem(
+  id: 'my_accessory',
+  name: 'Aksesoris Saya',
+  category: 'accessories',
+  modelPath: 'assets/models/clothing/accessories/my_accessory.glb',
+  thumbnailPath: 'assets/images/my_accessory_thumb.jpg',
+  description: 'Aksesoris custom saya',
+  colors: ['Gold', 'Silver'],
+  sizes: ['One Size'],
+  price: 150000,
+),

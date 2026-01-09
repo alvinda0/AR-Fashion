@@ -1,0 +1,23 @@
+📁 LETAKKAN FILE GLB JAKET ANDA DI SINI
+
+Contoh:
+- my_jacket.glb
+- denim_jacket.glb
+- leather_jacket.glb
+- blazer.glb
+
+Setelah menempatkan file GLB, update:
+lib/services/fashion_data_service.dart
+
+Contoh entry:
+FashionItem(
+  id: 'my_jacket',
+  name: 'Jaket Saya',
+  category: 'jackets',
+  modelPath: 'assets/models/clothing/jackets/my_jacket.glb',
+  thumbnailPath: 'assets/images/my_jacket_thumb.jpg',
+  description: 'Jaket custom saya',
+  colors: ['Hitam', 'Navy'],
+  sizes: ['S', 'M', 'L'],
+  price: 350000,
+),
