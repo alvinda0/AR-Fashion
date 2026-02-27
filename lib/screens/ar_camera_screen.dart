@@ -36,48 +36,153 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
       'name': 'Dayana',
       'image': 'assets/images/dayana.jpg',
       'model': 'assets/glb/dayana_blue.glb',
+      'category': 'Dress',
+      'description': '''Bismillah…Open Katalog Seragaman💐
+
+Dayana Dress by @aerahijab.official💐
+
+Dayana Dress di design simple dengan kombinasi Babydoll yang memadukan nuansa feminim dan modis. Menggunakan bahan utama Shakilla Premium yang lembut, serta sifatnya yang flowy dan tidak mudah kusut, sehingga sangat praktis untuk dirawat.
+
+Dayana Dress memberikan sentuhan mewah dan modern untuk penampilan sehari-hari Anda✨
+
+🖊Detail :
+⁃ Matt : Shakilla Premium
+⁃ Terdapat kombinasi layer dengan material Babydoll Premium yang membuat dressnya terlihat lebih menawan
+⁃ Terdapat aksen manik permata pada bagian depan yang membuat looknya elegan
+⁃ Terdapat kancing pada layer Babydoll Premium
+⁃ Terdapat resleting pada bagian depan dressnya sehingga busui friendly
+⁃ Menggunakan desain kerah kemeja yang membuat looknya simpel namun tetap menawan
+⁃ Terdapat saku pada bagian kanan sehingga memudahkan untuk membawa barang-barang kecil
+⁃ Desain lengan dari kombinasi Babydoll Premium yang mempercantik tampilannya
+⁃ Free tali lepas pasang untuk styling dressnya, sehingga bisa dijadikan beberapa macam style
+
+🌈Varian Warna :
+⁃ Dusty Choco
+⁃ Mauve Lilac
+⁃ Steel Blue 
+⁃ White
+⁃ Black
+
+Pashmina :
+⁃ Dusty Choco
+⁃ Mauve Lilac 
+⁃ Steel Blue
+⁃ White
+⁃ Black
+
+📐 Sizechart :
+* XS : LD 84 cm // PB 125 cm
+* S : LD 90 cm // PB 131 cm
+* M : LD 96 cm // PB 135 cm
+* L : LD 100 cm // PB 137 cm
+* XL : LD 110 cm // PB 140 cm
+* XXL : LD 120 cm // PB 142 cm
+
+Pashmina : 180 cm x 70 cm
+
+⚖️ Estimasi Berat : 400 gram
+
+💵Pricelist 
+* XS : Rp 140.000 ,-
+* S : Rp 150.000 ,-
+* M : Rp 155.000 ,-
+* L : Rp 160.000 ,-
+* XL : Rp 165.000 ,-
+* XXL : Rp 170.000 ,-
+
+Pashmina : Rp 55.000 ,-
+
+⛔️Lebih atau Kurang 1-3 Cm dikarenakan Proses Produksi
+⛔️ Kemiripan warna 90%, Karena setiap layar HP/PC mempunyai karakteristik yang berbeda. Selain itu efek pencahayaan saat Photoshot bisa saja mempengaruhi tampilan warna pada hasil foto''',
     },
     {
       'id': 'nayra',
       'name': 'Nayra',
       'image': 'assets/images/nayra.jpg',
       'model': 'assets/glb/nayra_black.glb',
+      'category': 'Dress',
+      'description': '''NAYRA Dress AFAS X SITA
+(Open PO 19-26 Jan 2026)
+
+Detail Dress
+
+🌸 Material Ceruty Babydoll premium memiliki karakteristik bahan yang jatuh, lembut, tidak mudah kusut, dan sangat adem
+🌸 Menggunakan resleting belakang
+🌸 Kerah Shanghai untuk tampilan rapi namun tetap santai
+🌸 Terdapat variasi lis kombinasi vertikal di bagian depan untuk membuat ilusi tubuh menjadi lebih slim dan jenjang
+🌸 Variasi Swarovski pada bagian depan membuat look lebih elegant
+🌸 Menggunakan lengan manset untuk memberikan keseimbangan antara ringan dan rapi yang modern (Wudhu Friendly)
+🌸 Cutting A-line, melebar kebawah dengan anggun, memberikan kesan feminim dan sopan
+🌸 Terdapat Plat Ekslusif di bagian lengan
+
+Warna
+🌸 Coffee
+🌸 Jade
+🌸 Steel
+
+Size
+Dress : XS-XXL
+
+Harga
+XS-XL : ~429.000~ 389.000
+XXL : +30.000
+
+Nayra Dress by @sita.id.official @afas_id 
+
+NOTE :
+⚘️ Perbedaan warna 10-20% karena efek cahaya dalam photoshoot
+⚘️ Perbedaan ukuran bisa lebih atau kurang karena proses produksi
+⚘️ Estimasi Ready 3-4 minggu setelah close PO
+⚘️ Full Payment
+⚘️ Produk Ready akan diinfokan 1 minggu sebelumnya untuk diteruskan di tim masing-masing''',
     },
     {
       'id': 'sabrina_black',
       'name': 'Sabrina Black',
       'image': 'assets/images/sabrina black.jpg',
       'model': 'assets/glb/sabrina_black.glb',
+      'category': 'Dress',
+      'description': 'Detail produk Sabrina Black',
     },
     {
       'id': 'sabrina_white',
       'name': 'Sabrina White',
       'image': 'assets/images/sabrina white.jpg',
       'model': 'assets/glb/sabrina_white.glb',
+      'category': 'Dress',
+      'description': 'Detail produk Sabrina White',
     },
     {
       'id': 'valerya_pink',
       'name': 'Valerya Pink',
       'image': 'assets/images/valerya pink.jpg',
       'model': 'assets/glb/valerya_pink.glb',
+      'category': 'Dress',
+      'description': 'Detail produk Valerya Pink',
     },
     {
       'id': 'xavia_black',
       'name': 'Xavia Black',
       'image': 'assets/images/xavia black.jpg',
       'model': 'assets/glb/xavia_black.glb',
+      'category': 'Dress',
+      'description': 'Detail produk Xavia Black',
     },
     {
       'id': 'xavia_blue',
       'name': 'Xavia Blue',
       'image': 'assets/images/xavia blue.jpg',
       'model': 'assets/glb/xavia_blue.glb',
+      'category': 'Dress',
+      'description': 'Detail produk Xavia Blue',
     },
     {
       'id': 'xavia_purple',
       'name': 'Xavia Purple',
       'image': 'assets/images/xavia purple.jpg',
       'model': 'assets/glb/xavia_purple.glb',
+      'category': 'Dress',
+      'description': 'Detail produk Xavia Purple',
     },
   ];
   
@@ -168,9 +273,9 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
   
   void _startImageRecognition() {
     _recognitionTimer = Timer.periodic(const Duration(milliseconds: 1500), (timer) {
-      // Only scan when no model is currently displayed
-      if (_selectedItemId == null && 
-          !_isProcessingImage && 
+      // Continue scanning even when model is displayed for real-time detection
+      if (!_isProcessingImage && 
+          !_isLoadingModel &&
           _cameraController != null && 
           _cameraController!.value.isInitialized) {
         _processCurrentFrame();
@@ -198,6 +303,7 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
       String? matchedFromText = _findMatchingItemFromText(detectedText);
       if (matchedFromText != null && _selectedItemId != matchedFromText) {
         debugPrint('Matched from text: $matchedFromText');
+        
         setState(() {
           _selectedItemId = matchedFromText;
           _isLoadingModel = true;
@@ -367,6 +473,153 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
     
     return null;
   }
+  
+  void _showProductDetail() {
+    if (_selectedItemId == null) return;
+    
+    final item = _fashionItems.firstWhere((item) => item['id'] == _selectedItemId);
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (context, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF00796B),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item['name']!,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Image and category
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 140,
+                            height: 200,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.asset(
+                                item['image']!,
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF00796B).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: const Color(0xFF00796B)),
+                                  ),
+                                  child: Text(
+                                    item['category'] ?? 'Dress',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Color(0xFF00796B),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                const Text(
+                                  'Koleksi Premium',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Bahan premium dengan kualitas terbaik',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 12),
+                      
+                      // Description
+                      Text(
+                        item['description'] ?? 'Detail produk ${item['name']}',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.6,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -408,10 +661,14 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
                             )['model']!,
                             alt: 'Fashion 3D Model',
                             ar: true,
-                            autoRotate: true,
+                            autoRotate: false, // Disable auto-rotate
+                            autoPlay: false, // Disable animation auto-play
                             cameraControls: true,
                             backgroundColor: Colors.transparent,
                             loading: Loading.eager,
+                            shadowIntensity: 0, // Disable shadow
+                            shadowSoftness: 0,
+                            interactionPrompt: InteractionPrompt.none, // Remove interaction prompt
                           ),
                         ),
                         if (_isLoadingModel)
@@ -471,61 +728,62 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
                     ),
                   ),
                 
-                // Image Recognition Indicator (hide when model is shown)
-                if (_selectedItemId == null)
-                  Positioned(
-                    top: MediaQuery.of(context).padding.top + 8,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  _isProcessingImage ? Icons.search : Icons.text_fields,
+                // Image Recognition Indicator (always show, even when model is displayed)
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 8,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _isProcessingImage ? Icons.search : Icons.text_fields,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _isProcessingImage 
+                                    ? 'Reading text...' 
+                                    : _selectedItemId == null 
+                                        ? 'Point at poster with product name'
+                                        : 'Scanning for other products...',
+                                style: const TextStyle(
                                   color: Colors.white,
-                                  size: 16,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _isProcessingImage 
-                                      ? 'Reading text...' 
-                                      : 'Point at poster with product name',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (_lastDetectedLabel.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(
-                                  _lastDetectedLabel,
-                                  style: const TextStyle(
-                                    color: Colors.greenAccent,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                  textAlign: TextAlign.center,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                          ],
-                        ),
+                            ],
+                          ),
+                          if (_lastDetectedLabel.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Text(
+                                _lastDetectedLabel,
+                                style: const TextStyle(
+                                  color: Colors.greenAccent,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                   ),
+                ),
                 
                 // Close 3D Model button (when model is shown)
                 if (_selectedItemId != null)
@@ -545,41 +803,20 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
                     ),
                   ),
                 
-                // Model info (when model is shown)
+                // Detail button (when model is shown)
                 if (_selectedItemId != null)
                   Positioned(
-                    top: MediaQuery.of(context).padding.top + 8,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.black54,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.check_circle,
-                              color: Colors.greenAccent,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Showing: ${_fashionItems.firstWhere((item) => item['id'] == _selectedItemId)['name']}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
+                    top: MediaQuery.of(context).padding.top + 120,
+                    right: 8,
+                    child: IconButton(
+                      icon: const Icon(Icons.info_outline, color: Colors.white, size: 28),
+                      onPressed: _showProductDetail,
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.black54,
                       ),
                     ),
                   ),
+                
                 
                 // Fashion Items List (Overlay at bottom)
                 Positioned(
@@ -613,6 +850,7 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
                               _selectedItemId = item['id'];
                               _isLoadingModel = true;
                             });
+                            
                             // Simulate model loading time
                             Future.delayed(const Duration(seconds: 2), () {
                               if (mounted) {
