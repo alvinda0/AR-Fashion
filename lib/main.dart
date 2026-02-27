@@ -20,7 +20,7 @@ class FashionARApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Vast Hijab Store',
+      title: 'AR Fashion',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF00796B),
@@ -218,7 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
         
         // App title
         Text(
-          'Vast Hijab Store',
+          'AR Fashion',
           style: TextStyle(
             fontSize: titleSize,
             fontWeight: FontWeight.bold,
@@ -229,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
         SizedBox(height: isTablet ? 12 : 8),
         
         Text(
-          'Virtual Hijab Try-On Experience',
+          'Virtual Fashion 3D Experience',
           style: TextStyle(
             fontSize: subtitleSize,
             color: Colors.white70,
@@ -291,7 +291,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 24),
               
               const Text(
-                'Vast Hijab Store',
+                'AR Fashion',
                 style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
@@ -302,7 +302,7 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 8),
               
               const Text(
-                'Virtual Hijab Try-On Experience',
+                'Virtual Fashion 3D Experience',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.white70,
@@ -339,19 +339,19 @@ class _HomeScreenState extends State<HomeScreen> {
       {
         'icon': Icons.camera_alt,
         'title': 'AR Camera',
-        'description': 'Gunakan kamera untuk melihat hijab dalam AR',
+        'description': 'Scan gambar produk untuk melihat model 3D',
         'onTap': _navigateToARCamera,
       },
       {
         'icon': Icons.play_circle_outline,
         'title': 'Tutorial',
-        'description': 'Panduan',
+        'description': 'Panduan penggunaan aplikasi AR',
         'onTap': _navigateToBodyTracking,
       },
       {
         'icon': Icons.photo_library,
         'title': 'Gallery',
-        'description': 'Koleksi lengkap hijab, jilbab, dan aksesoris muslim',
+        'description': 'Koleksi lengkap produk fashion',
         'onTap': _navigateToGallery,
       },
       {
@@ -378,7 +378,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildInfoText(bool isTablet) {
     return Text(
-      'Pastikan Anda berada di tempat dengan pencahayaan yang cukup',
+      'Pastikan gambar produk terlihat jelas untuk hasil terbaik',
       style: TextStyle(
         fontSize: isTablet ? 14 : 12,
         color: Colors.white.withValues(alpha: 0.8),
