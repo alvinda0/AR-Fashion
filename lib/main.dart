@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'screens/ar_camera_v2.dart';
-import 'screens/simple_ar_test.dart';
 import 'screens/body_tracking_screen.dart';
 import 'screens/fashion_collection_screen.dart';
 import 'screens/about_screen.dart';
+import 'screens/gallery_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -80,6 +80,14 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const FashionCollectionScreen(),
+      ),
+    );
+  }
+
+  void _navigateToGallery() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const GalleryScreen(),
       ),
     );
   }
@@ -191,13 +199,29 @@ class _HomeScreenState extends State<HomeScreen> {
           width: logoSize,
           height: logoSize,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(logoSize / 2),
-          ),
-          child: Icon(
-            Icons.headset_mic,
-            size: logoSize * 0.5,
             color: Colors.white,
+            borderRadius: BorderRadius.circular(logoSize / 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(logoSize / 2),
+            child: Image.asset(
+              'assets/images/logo.png',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Icons.headset_mic,
+                  size: logoSize * 0.5,
+                  color: const Color(0xFF1E3C72),
+                );
+              },
+            ),
           ),
         ),
         
@@ -230,11 +254,6 @@ class _HomeScreenState extends State<HomeScreen> {
         
         SizedBox(height: isTablet ? 60 : 48),
         
-        // Start button
-        _buildStartButton(screenSize, isTablet),
-        
-        SizedBox(height: isTablet ? 32 : 24),
-        
         // Info text
         _buildInfoText(isTablet),
       ],
@@ -254,13 +273,29 @@ class _HomeScreenState extends State<HomeScreen> {
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(50),
-                ),
-                child: const Icon(
-                  Icons.headset_mic,
-                  size: 50,
                   color: Colors.white,
+                  borderRadius: BorderRadius.circular(50),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(50),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Icons.headset_mic,
+                        size: 50,
+                        color: Color(0xFF1E3C72),
+                      );
+                    },
+                  ),
                 ),
               ),
               
@@ -302,10 +337,6 @@ class _HomeScreenState extends State<HomeScreen> {
               
               const SizedBox(height: 32),
               
-              _buildStartButton(screenSize, false),
-              
-              const SizedBox(height: 16),
-              
               _buildInfoText(false),
             ],
           ),
@@ -332,7 +363,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'icon': Icons.photo_library,
         'title': 'Gallery',
         'description': 'Koleksi lengkap hijab, jilbab, dan aksesoris muslim',
-        'onTap': _navigateToFashionCollection,
+        'onTap': _navigateToGallery,
       },
       {
         'icon': Icons.info_outline,

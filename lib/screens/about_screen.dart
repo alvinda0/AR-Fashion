@@ -66,13 +66,29 @@ class AboutScreen extends StatelessWidget {
           width: logoSize,
           height: logoSize,
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(logoSize / 2),
-          ),
-          child: Icon(
-            Icons.headset_mic,
-            size: logoSize * 0.5,
             color: Colors.white,
+            borderRadius: BorderRadius.circular(logoSize / 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(logoSize / 2),
+            child: Image.asset(
+              'assets/images/logo.png',
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Icon(
+                  Icons.headset_mic,
+                  size: logoSize * 0.5,
+                  color: const Color(0xFF1E3C72),
+                );
+              },
+            ),
           ),
         ),
         
@@ -190,13 +206,29 @@ class AboutScreen extends StatelessWidget {
                 width: 80,
                 height: 80,
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.2),
-                  borderRadius: BorderRadius.circular(40),
-                ),
-                child: const Icon(
-                  Icons.headset_mic,
-                  size: 40,
                   color: Colors.white,
+                  borderRadius: BorderRadius.circular(40),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(40),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Icons.headset_mic,
+                        size: 40,
+                        color: Color(0xFF1E3C72),
+                      );
+                    },
+                  ),
                 ),
               ),
               
