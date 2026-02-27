@@ -12,7 +12,7 @@ class AboutScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('About'),
-        backgroundColor: const Color(0xFFD5698C),
+        backgroundColor: const Color(0xFF00796B),
         foregroundColor: Colors.white,
       ),
       body: Container(
@@ -21,9 +21,8 @@ class AboutScreen extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFD5698C),
-              Color(0xFFE7809E),
-              Color(0xFFF5A3B8),
+              Color(0xFF00796B),
+              Color(0xFF26A69A),
             ],
           ),
         ),
@@ -86,7 +85,7 @@ class AboutScreen extends StatelessWidget {
                 return Icon(
                   Icons.headset_mic,
                   size: logoSize * 0.5,
-                  color: const Color(0xFFD5698C),
+                  color: const Color(0xFF00796B),
                 );
               },
             ),
@@ -226,7 +225,7 @@ class AboutScreen extends StatelessWidget {
                       return const Icon(
                         Icons.headset_mic,
                         size: 40,
-                        color: Color(0xFFD5698C),
+                        color: Color(0xFF00796B),
                       );
                     },
                   ),

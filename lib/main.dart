@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'screens/ar_camera_v2.dart';
+import 'screens/ar_camera_screen.dart';
 import 'screens/tutorial_screen.dart';
-import 'screens/fashion_collection_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/gallery_screen.dart';
 
@@ -23,7 +22,10 @@ class FashionARApp extends StatelessWidget {
     return MaterialApp(
       title: 'Vast Hijab Store',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFD5698C)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF00796B),
+          brightness: Brightness.light,
+        ),
         useMaterial3: true,
       ),
       home: const HomeScreen(),
@@ -40,10 +42,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _isLoading = false;
-
   Future<void> _navigateToARCamera() async {
-    setState(() => _isLoading = true);
 
     try {
       // Request camera permission
@@ -54,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
         if (mounted) {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => const ARCameraV2(),
+              builder: (context) => const ARCameraScreen(),
             ),
           );
         }
@@ -63,8 +62,6 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     } catch (e) {
       _showErrorDialog('Error requesting permissions: $e');
-    } finally {
-      setState(() => _isLoading = false);
     }
   }
 
@@ -72,14 +69,6 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const TutorialScreen(),
-      ),
-    );
-  }
-
-  void _navigateToFashionCollection() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const FashionCollectionScreen(),
       ),
     );
   }
@@ -155,9 +144,8 @@ class _HomeScreenState extends State<HomeScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFD5698C), // Rose pink darker
-              Color(0xFFE7809E), // Rose pink (logo color)
-              Color(0xFFF5A3B8), // Rose pink lighter
+              Color(0xFF00796B), // Teal primary
+              Color(0xFF26A69A), // Teal lighter
             ],
           ),
         ),
@@ -219,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Icon(
                   Icons.headset_mic,
                   size: logoSize * 0.5,
-                  color: const Color(0xFFD5698C),
+                  color: const Color(0xFF00796B),
                 );
               },
             ),
@@ -293,7 +281,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       return const Icon(
                         Icons.headset_mic,
                         size: 50,
-                        color: Color(0xFFD5698C),
+                        color: Color(0xFF00796B),
                       );
                     },
                   ),
@@ -388,42 +376,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }).toList();
   }
 
-  Widget _buildStartButton(Size screenSize, bool isTablet) {
-    return SizedBox(
-      width: double.infinity,
-      height: isTablet ? 64 : 56,
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _navigateToARCamera,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: const Color(0xFFD5698C),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(isTablet ? 32 : 28),
-          ),
-          elevation: 4,
-        ),
-        child: _isLoading
-            ? SizedBox(
-                width: isTablet ? 28 : 24,
-                height: isTablet ? 28 : 24,
-                child: const CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Color(0xFFD5698C),
-                  ),
-                ),
-              )
-            : Text(
-                'Mulai Hijab Try-On',
-                style: TextStyle(
-                  fontSize: isTablet ? 20 : 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-      ),
-    );
-  }
-
   Widget _buildInfoText(bool isTablet) {
     return Text(
       'Pastikan Anda berada di tempat dengan pencahayaan yang cukup',
@@ -461,12 +413,12 @@ class _HomeScreenState extends State<HomeScreen> {
               width: iconSize,
               height: iconSize,
               decoration: BoxDecoration(
-                color: const Color(0xFFE7809E).withValues(alpha: 0.2),
+                color: const Color(0xFF00796B).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(iconSize / 2),
               ),
               child: Icon(
                 icon,
-                color: const Color(0xFFD5698C),
+                color: const Color(0xFF00796B),
                 size: iconSize * 0.5,
               ),
             ),
@@ -496,7 +448,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             Icon(
               Icons.arrow_forward_ios,
-              color: const Color(0xFFD5698C),
+              color: const Color(0xFF00796B),
               size: isTablet ? 20 : 16,
             ),
           ],

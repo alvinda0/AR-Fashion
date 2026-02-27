@@ -448,7 +448,7 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gallery Koleksi'),
-        backgroundColor: const Color(0xFFD5698C),
+        backgroundColor: const Color(0xFF00796B),
         foregroundColor: Colors.white,
       ),
       body: GridView.builder(
@@ -547,7 +547,7 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD5698C),
+                  color: const Color(0xFF00796B),
                   borderRadius: const BorderRadius.vertical(
                     top: Radius.circular(4),
                   ),
@@ -626,10 +626,10 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
                                     vertical: 6,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFE7809E).withValues(alpha: 0.15),
+                                    color: const Color(0xFF00796B).withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(20),
                                     border: Border.all(
-                                      color: const Color(0xFFD5698C),
+                                      color: const Color(0xFF00796B),
                                       width: 1,
                                     ),
                                   ),
@@ -637,7 +637,7 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
                                     item['category']!,
                                     style: const TextStyle(
                                       fontSize: 12,
-                                      color: Color(0xFFD5698C),
+                                      color: Color(0xFF00796B),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),

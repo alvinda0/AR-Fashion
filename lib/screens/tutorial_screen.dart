@@ -11,7 +11,7 @@ class TutorialScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tutorial'),
-        backgroundColor: const Color(0xFFD5698C),
+        backgroundColor: const Color(0xFF00796B),
         foregroundColor: Colors.white,
       ),
       body: Container(
@@ -20,9 +20,8 @@ class TutorialScreen extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFD5698C),
-              Color(0xFFE7809E),
-              Color(0xFFF5A3B8),
+              Color(0xFF00796B),
+              Color(0xFF26A69A),
             ],
           ),
         ),
@@ -214,7 +213,7 @@ class TutorialScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: isTablet ? 18 : 16,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFFD5698C),
+                  color: const Color(0xFF00796B),
                 ),
               ),
             ),
