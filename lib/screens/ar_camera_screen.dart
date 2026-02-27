@@ -20,6 +20,8 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
   bool _isLoading = true;
   bool _isLoadingModel = false;
   bool _isFrontCamera = true;
+  bool _isModelLoaded = false;
+  double _modelLoadProgress = 0.0;
   
   // Image recognition
   final ImageLabeler _imageLabeler = ImageLabeler(options: ImageLabelerOptions());
@@ -28,6 +30,8 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
   bool _isProcessingImage = false;
   final Map<String, ui.Image> _referenceImages = {};
   String _lastDetectedLabel = '';
+  List<String> _recentLabels = [];
+  String _detectedText = '';
   
   // Fashion items data
   final List<Map<String, String>> _fashionItems = [
@@ -153,12 +157,66 @@ NOTE :
       'description': 'Detail produk Sabrina White',
     },
     {
-      'id': 'valerya_pink',
-      'name': 'Valerya Pink',
+      'id': 'valerya_dusty',
+      'name': 'Valerya Dusty',
       'image': 'assets/images/valerya pink.jpg',
       'model': 'https://qerzhadqtgkckrejxcqg.supabase.co/storage/v1/object/public/ar-fashion-glb/valerya_pink.glb',
       'category': 'Dress',
-      'description': 'Detail produk Valerya Pink',
+      'description': '''Bismillahirrahmanirrahim..
+Sebelum menyimak lebih lanjut, jangan lupa shalawatan dulu yuk! Semoga jualan kita laris manis dan berkah untuk kita semua. Aamiin.. 🤲🏻
+
+VALERYA SERIES NEW - Dusty
+On model pakai size M
+
+Berbahan babydoll premium X rayon premium X tule premium yang sangat nyaman, adem. Modelnya simple namun looknya super mewah! Cocok banget untuk outfit daily, outfit hangout atau semi formal My Nadheera! 😍
+
+DETAIL DRESS & MIDI DRESS :
+✔️ model simpel looknya mewah dan so slimmy
+✔️ detail lengan puffy dengan kopel karet smoke dipadukan dengan tule premium ( Wudlu friendly )
+✔️ detail kerah shanghai dengan detail zipper bagian depan dan tali adjustable
+✔️ detail Cutting super lebar dengan floi 
+✔️ berlabel ORI Nadheera Luxury
+
+Size Chart Midi Dress :
+LD : 92/96/100/104
+PB : 130
+P. Lengan : 57
+
+Size Chart Dress :
+LD : 92/96/100/104
+PB : 135/138/140/140
+P. Lengan : 57
+
+HARGA NORMAL DRESS & MIDI DRESS :
+IDR 379.900,- (S)
+IDR 389.900,- (M)
+IDR 399.900,- (L)
+IDR 409.900,- (XL)
+
+HARGA SP DRESS & MIDI DRESS S-M :
+Retail : IDR 299.900,-
+Reseller : IDR 284.900,-
+Sub Agen : IDR 269.900,-
+Agen : IDR 249.900,-
+
+HARGA SP DRESS & MIDI DRESS L-XL :
+Retail : IDR 309.900,-
+Reseller : IDR 294.900,-
+Sub Agen : IDR 279.900,-
+Agen : IDR 259.900,-
+
+NOTE : 
+Retail - Sub Agen : Jika order dibawah minimal +7.500,-/item
+Agen - Distributor : Jika order dibawah minimal +10.000,-/item
+
+Available Colour :
+• bamboo
+• blue caroline
+• dusty
+• olive
+
+OPEN LIST H+1 SETELAH LAUNCHING S/D RABU, 21 JANUARI PUKUL 08.30 WIB ‼️
+INSYALLAH LANGSUNG PEMBAGIAN''',
     },
     {
       'id': 'xavia_black',
@@ -170,11 +228,75 @@ NOTE :
     },
     {
       'id': 'xavia_blue',
-      'name': 'Xavia Blue',
+      'name': 'Xavia Cornflower Blue',
       'image': 'assets/images/xavia blue.jpg',
       'model': 'https://qerzhadqtgkckrejxcqg.supabase.co/storage/v1/object/public/ar-fashion-glb/xavia_blue.glb',
       'category': 'Dress',
-      'description': 'Detail produk Xavia Blue',
+      'description': 'Detail produk Xavia Cornflower Blue',
+    },
+    {
+      'id': 'xavia_glamour',
+      'name': 'Xavia Glamour',
+      'image': 'assets/images/xavia blue old.jpg',
+      'model': 'https://qerzhadqtgkckrejxcqg.supabase.co/storage/v1/object/public/ar-fashion-glb/xavia_blue_old.glb',
+      'category': 'Dress',
+      'description': '''Bismillahirrahmanirrahim..
+Sebelum menyimak lebih lanjut, jangan lupa shalawatan dulu yuk! Semoga jualan kita laris manis dan berkah untuk kita semua. Aamiin.. 🤲🏻
+
+XAVIA SERIES - Glamour
+On model pakai size M
+
+Berbahan rayon premium yang sangat nyaman, adem. Modelnya simple namun looknya super mewah! Cocok banget untuk outfit daily, outfit hangout atau semi formal My Nadheera! 😍
+
+DETAIL DRESS & MIDI DRESS :
+✔️ model simpel looknya mewah dan so slimmy
+✔️ detail lengan semi puffy dengan kopel karet ( Wudlu friendly )
+✔️ detail kerah shanghai dengan detail zipper bagian depan ( Busui friendly ) 
+✔️ detail Cutting Aline super lebar 
+✔️ berlabel ORI Nadheera Luxury
+
+Size Chart Midi Dress :
+LD : 92/96/100/104/110/120
+PB : 130
+P. Lengan : 57
+
+Size Chart Dress :
+LD : 92/96/100/104/110/120
+PB : 135/138/140/140/140/140
+P. Lengan : 57
+
+HARGA NORMAL DRESS & MIDI DRESS :
+IDR 239.900,- (S)
+IDR 244.900,- (M)
+IDR 249.900,- (L)
+IDR 254.900,- (XL)
+IDR 259.900,- (XXL)
+IDR 264.900,- (XXXL)
+
+HARGA SP DRESS & MIDI DRESS S-L :
+Retail : IDR 189.900,-
+Reseller : IDR 179.900,-
+Sub Agen : IDR 169.900,-
+Agen : IDR 154.900,-
+
+HARGA SP DRESS & MIDI DRESS XL-XXXL :
+Retail : IDR 194.900,-
+Reseller : IDR 184.900,-
+Sub Agen : IDR 174.900,-
+Agen : IDR 159.900,-
+
+NOTE :
+Retail-Sub Agen : Jika order dibawah minimal +5.000,-/item
+Agen-Distributor : Jika order dibawah minimal +7.500,-/item
+
+Available Colour :
+• black
+• cornflower
+• glamour
+• mulberry
+
+OPEN LIST H+1 SETELAH LAUNCHING S/D RABU, 21 JANUARI 2026 PUKUL 08.30 WIB ‼️
+INSYALLAH LANGSUNG PEMBAGIAN📌''',
     },
     {
       'id': 'xavia_purple',
@@ -272,10 +394,11 @@ NOTE :
   }
   
   void _startImageRecognition() {
-    _recognitionTimer = Timer.periodic(const Duration(milliseconds: 1500), (timer) {
-      // Continue scanning even when model is displayed for real-time detection
+    _recognitionTimer = Timer.periodic(const Duration(milliseconds: 1000), (timer) {
+      // Pause scanning when model is loading or being displayed
       if (!_isProcessingImage && 
           !_isLoadingModel &&
+          !_isModelLoaded &&
           _cameraController != null && 
           _cameraController!.value.isInitialized) {
         _processCurrentFrame();
@@ -299,24 +422,34 @@ NOTE :
       debugPrint('=== Text Detected ===');
       debugPrint(detectedText);
       
+      // Update UI with detected text
+      if (mounted) {
+        setState(() {
+          _detectedText = detectedText;
+        });
+      }
+      
       // Check if any product name is in the detected text
       String? matchedFromText = _findMatchingItemFromText(detectedText);
       if (matchedFromText != null && _selectedItemId != matchedFromText) {
-        debugPrint('Matched from text: $matchedFromText');
+        debugPrint('✓✓✓ MATCHED FROM TEXT: $matchedFromText');
         
         setState(() {
           _selectedItemId = matchedFromText;
           _isLoadingModel = true;
+          _isModelLoaded = false;
+          _modelLoadProgress = 0.0;
           _lastDetectedLabel = 'Text: ${matchedFromText.toUpperCase()}';
         });
         
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            setState(() {
-              _isLoadingModel = false;
-            });
-          }
-        });
+        // Simulate loading progress
+        _simulateLoadingProgress();
+        _isProcessingImage = false;
+        return;
+      }
+      
+      // Don't process labels if already loading or model is displayed
+      if (_isLoadingModel || _isModelLoaded) {
         _isProcessingImage = false;
         return;
       }
@@ -329,31 +462,28 @@ NOTE :
         debugPrint('Label: ${label.label}, Confidence: ${label.confidence}');
       }
       
-      // Update last detected label for UI
-      if (labels.isNotEmpty && mounted) {
+      // Update UI with recent labels
+      if (mounted && labels.isNotEmpty) {
         setState(() {
+          _recentLabels = labels.take(5).map((l) => '${l.label} (${(l.confidence * 100).toInt()}%)').toList();
           _lastDetectedLabel = labels.first.label;
         });
       }
       
       // Match based on labels with lower threshold
       for (var label in labels) {
-        if (label.confidence > 0.3) { // Lower threshold for better detection
+        if (label.confidence > 0.2) { // Even lower threshold for better detection
           final matchedItem = _findMatchingItem(label.label);
           if (matchedItem != null && _selectedItemId != matchedItem) {
-            debugPrint('Matched item: $matchedItem for label: ${label.label}');
+            debugPrint('✓✓✓ MATCHED FROM LABEL: $matchedItem for label: ${label.label} (confidence: ${label.confidence})');
             setState(() {
               _selectedItemId = matchedItem;
               _isLoadingModel = true;
+              _isModelLoaded = false;
+              _modelLoadProgress = 0.0;
             });
             
-            Future.delayed(const Duration(seconds: 2), () {
-              if (mounted) {
-                setState(() {
-                  _isLoadingModel = false;
-                });
-              }
-            });
+            _simulateLoadingProgress();
             break;
           }
         }
@@ -370,50 +500,135 @@ NOTE :
     
     debugPrint('Searching for product names in text: $lowerText');
     
-    // Check for product names in text (case insensitive)
-    if (lowerText.contains('dayana')) {
+    // Remove special characters and extra spaces for better matching
+    final cleanText = lowerText.replaceAll(RegExp(r'[^\w\s]'), ' ').replaceAll(RegExp(r'\s+'), ' ');
+    debugPrint('Cleaned text: $cleanText');
+    
+    // Check for product names in text (case insensitive, flexible matching)
+    if (cleanText.contains('dayana') || cleanText.contains('daiana') || cleanText.contains('diana')) {
       debugPrint('✓ Found DAYANA in text');
       return 'dayana';
     }
-    if (lowerText.contains('nayra')) {
+    if (cleanText.contains('nayra') || cleanText.contains('naira') || cleanText.contains('nayla')) {
       debugPrint('✓ Found NAYRA in text');
       return 'nayra';
     }
-    if (lowerText.contains('sabrina')) {
+    if (cleanText.contains('sabrina') || cleanText.contains('sabina')) {
       debugPrint('✓ Found SABRINA in text');
-      if (lowerText.contains('black')) {
+      if (cleanText.contains('black') || cleanText.contains('hitam')) {
         debugPrint('  → Variant: BLACK');
         return 'sabrina_black';
       }
-      if (lowerText.contains('white')) {
+      if (cleanText.contains('white') || cleanText.contains('putih')) {
         debugPrint('  → Variant: WHITE');
         return 'sabrina_white';
       }
       return 'sabrina_black'; // default
     }
-    if (lowerText.contains('valerya')) {
+    if (cleanText.contains('valerya') || cleanText.contains('valeria') || cleanText.contains('valery')) {
       debugPrint('✓ Found VALERYA in text');
-      return 'valerya_pink';
+      return 'valerya_dusty';
     }
-    if (lowerText.contains('xavia')) {
+    if (cleanText.contains('xavia') || cleanText.contains('xafia') || cleanText.contains('xavier')) {
       debugPrint('✓ Found XAVIA in text');
-      if (lowerText.contains('black')) {
+      if (cleanText.contains('black') || cleanText.contains('hitam')) {
         debugPrint('  → Variant: BLACK');
         return 'xavia_black';
       }
-      if (lowerText.contains('blue')) {
-        debugPrint('  → Variant: BLUE');
+      if (cleanText.contains('blue') || cleanText.contains('biru') || cleanText.contains('cornflower')) {
+        debugPrint('  → Variant: CORNFLOWER BLUE');
         return 'xavia_blue';
       }
-      if (lowerText.contains('purple')) {
+      if (cleanText.contains('glamour') || cleanText.contains('glamor')) {
+        debugPrint('  → Variant: GLAMOUR');
+        return 'xavia_glamour';
+      }
+      if (cleanText.contains('purple') || cleanText.contains('ungu') || cleanText.contains('violet') || cleanText.contains('mulberry')) {
         debugPrint('  → Variant: PURPLE');
         return 'xavia_purple';
       }
       return 'xavia_black'; // default
     }
     
+    // Check for color keywords alone (if no product name found)
+    if (cleanText.contains('blue') || cleanText.contains('biru') || cleanText.contains('cornflower')) {
+      debugPrint('✓ Found BLUE/CORNFLOWER color - matching xavia cornflower blue');
+      return 'xavia_blue';
+    }
+    if (cleanText.contains('black') || cleanText.contains('hitam')) {
+      debugPrint('✓ Found BLACK color - matching nayra');
+      return 'nayra';
+    }
+    if (cleanText.contains('white') || cleanText.contains('putih')) {
+      debugPrint('✓ Found WHITE color - matching sabrina white');
+      return 'sabrina_white';
+    }
+    if (cleanText.contains('pink') || cleanText.contains('merah muda') || cleanText.contains('dusty')) {
+      debugPrint('✓ Found PINK/DUSTY color - matching valerya');
+      return 'valerya_dusty';
+    }
+    if (cleanText.contains('purple') || cleanText.contains('ungu') || cleanText.contains('violet')) {
+      debugPrint('✓ Found PURPLE color - matching xavia purple');
+      return 'xavia_purple';
+    }
+    
     debugPrint('✗ No product name found in text');
     return null;
+  }
+  
+  void _simulateLoadingProgress() {
+    // Simulate realistic loading progress
+    _modelLoadProgress = 0.0;
+    
+    // Stage 1: Downloading (0-30%)
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted && _isLoadingModel) {
+        setState(() => _modelLoadProgress = 0.15);
+      }
+    });
+    
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted && _isLoadingModel) {
+        setState(() => _modelLoadProgress = 0.30);
+      }
+    });
+    
+    // Stage 2: Processing (30-70%)
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (mounted && _isLoadingModel) {
+        setState(() => _modelLoadProgress = 0.50);
+      }
+    });
+    
+    Future.delayed(const Duration(milliseconds: 1400), () {
+      if (mounted && _isLoadingModel) {
+        setState(() => _modelLoadProgress = 0.70);
+      }
+    });
+    
+    // Stage 3: Rendering (70-100%)
+    Future.delayed(const Duration(milliseconds: 1800), () {
+      if (mounted && _isLoadingModel) {
+        setState(() => _modelLoadProgress = 0.85);
+      }
+    });
+    
+    Future.delayed(const Duration(milliseconds: 2200), () {
+      if (mounted && _isLoadingModel) {
+        setState(() => _modelLoadProgress = 0.95);
+      }
+    });
+    
+    // Complete
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      if (mounted) {
+        setState(() {
+          _modelLoadProgress = 1.0;
+          _isLoadingModel = false;
+          _isModelLoaded = true;
+        });
+      }
+    });
   }
   
   String? _findMatchingItem(String label) {
@@ -421,12 +636,18 @@ NOTE :
     
     debugPrint('Checking label: $lowerLabel');
     
-    // Match poster - show random or cycle through items
+    // Match ANY visual content - be very aggressive
     if (lowerLabel.contains('poster') || 
         lowerLabel.contains('picture') ||
         lowerLabel.contains('photo') ||
-        lowerLabel.contains('image')) {
-      debugPrint('Detected POSTER/IMAGE - showing fashion item');
+        lowerLabel.contains('image') ||
+        lowerLabel.contains('paper') ||
+        lowerLabel.contains('document') ||
+        lowerLabel.contains('print') ||
+        lowerLabel.contains('text') ||
+        lowerLabel.contains('advertisement') ||
+        lowerLabel.contains('flyer')) {
+      debugPrint('✓ Detected VISUAL CONTENT - showing fashion item');
       // Cycle through items based on current selection
       if (_selectedItemId == null) {
         return _fashionItems.first['id'];
@@ -438,39 +659,53 @@ NOTE :
     }
     
     // Match based on color keywords
-    if (lowerLabel.contains('blue')) {
-      debugPrint('Detected BLUE - matching dayana or xavia blue');
-      return 'dayana'; // or 'xavia_blue'
+    if (lowerLabel.contains('blue') || lowerLabel.contains('azure') || lowerLabel.contains('cornflower')) {
+      debugPrint('✓ Detected BLUE/CORNFLOWER - matching xavia cornflower blue');
+      return 'xavia_blue';
     }
-    if (lowerLabel.contains('black')) {
-      debugPrint('Detected BLACK - matching nayra');
+    if (lowerLabel.contains('black') || lowerLabel.contains('dark')) {
+      debugPrint('✓ Detected BLACK - matching nayra');
       return 'nayra';
     }
-    if (lowerLabel.contains('white')) {
-      debugPrint('Detected WHITE - matching sabrina white');
+    if (lowerLabel.contains('white') || lowerLabel.contains('light')) {
+      debugPrint('✓ Detected WHITE - matching sabrina white');
       return 'sabrina_white';
     }
-    if (lowerLabel.contains('pink')) {
-      debugPrint('Detected PINK - matching valerya');
-      return 'valerya_pink';
+    if (lowerLabel.contains('pink') || lowerLabel.contains('rose') || lowerLabel.contains('dusty')) {
+      debugPrint('✓ Detected PINK/DUSTY - matching valerya');
+      return 'valerya_dusty';
     }
-    if (lowerLabel.contains('purple') || lowerLabel.contains('violet')) {
-      debugPrint('Detected PURPLE - matching xavia purple');
+    if (lowerLabel.contains('purple') || lowerLabel.contains('violet') || lowerLabel.contains('lavender')) {
+      debugPrint('✓ Detected PURPLE - matching xavia purple');
       return 'xavia_purple';
     }
     
-    // Match based on clothing keywords
+    // Match based on clothing keywords - very broad
     if (lowerLabel.contains('dress') || 
         lowerLabel.contains('clothing') ||
         lowerLabel.contains('fashion') ||
         lowerLabel.contains('apparel') ||
         lowerLabel.contains('garment') ||
         lowerLabel.contains('textile') ||
-        lowerLabel.contains('fabric')) {
-      debugPrint('Detected clothing item - showing first item');
+        lowerLabel.contains('fabric') ||
+        lowerLabel.contains('wear') ||
+        lowerLabel.contains('outfit') ||
+        lowerLabel.contains('attire')) {
+      debugPrint('✓ Detected CLOTHING - showing first item');
       return _fashionItems.first['id'];
     }
     
+    // Match person/model - show fashion item
+    if (lowerLabel.contains('person') ||
+        lowerLabel.contains('woman') ||
+        lowerLabel.contains('model') ||
+        lowerLabel.contains('human') ||
+        lowerLabel.contains('face')) {
+      debugPrint('✓ Detected PERSON/MODEL - showing fashion item');
+      return _fashionItems.first['id'];
+    }
+    
+    debugPrint('✗ No match found for: $lowerLabel');
     return null;
   }
   
@@ -661,42 +896,175 @@ NOTE :
                             )['model']!,
                             alt: 'Fashion 3D Model',
                             ar: true,
-                            autoRotate: false, // Disable auto-rotate
-                            autoPlay: false, // Disable animation auto-play
+                            autoRotate: false,
+                            autoPlay: false,
                             cameraControls: true,
                             backgroundColor: Colors.transparent,
                             loading: Loading.eager,
-                            shadowIntensity: 0, // Disable shadow
+                            shadowIntensity: 0,
                             shadowSoftness: 0,
-                            interactionPrompt: InteractionPrompt.none, // Remove interaction prompt
-                            // Add reveal attribute for faster initial display
+                            interactionPrompt: InteractionPrompt.none,
+                            // Performance optimizations
+                            disablePan: false,
+                            disableTap: false,
+                            touchAction: TouchAction.panY,
+                            // Optimize rendering with CSS
                             relatedCss: '''
                               model-viewer {
                                 --poster-color: transparent;
+                                --progress-bar-color: #00796B;
+                                /* Hardware acceleration */
+                                transform: translateZ(0);
+                                -webkit-transform: translateZ(0);
+                                will-change: transform;
+                                /* Smooth rendering */
+                                -webkit-font-smoothing: antialiased;
+                                -moz-osx-font-smoothing: grayscale;
+                                /* Optimize performance */
+                                backface-visibility: hidden;
+                                -webkit-backface-visibility: hidden;
+                              }
+                              
+                              /* Optimize canvas rendering */
+                              model-viewer canvas {
+                                transform: translateZ(0);
+                                -webkit-transform: translateZ(0);
+                              }
+                            ''',
+                            // Track loading progress
+                            relatedJs: '''
+                              const modelViewer = document.querySelector('model-viewer');
+                              if (modelViewer) {
+                                // Track loading progress
+                                modelViewer.addEventListener('progress', (event) => {
+                                  const progress = event.detail.totalProgress;
+                                  window.flutter_inappwebview.callHandler('onProgress', progress);
+                                });
+                                
+                                // Model loaded
+                                modelViewer.addEventListener('load', () => {
+                                  window.flutter_inappwebview.callHandler('onModelLoaded');
+                                  
+                                  // Optimize WebGL context
+                                  const canvas = modelViewer.shadowRoot.querySelector('canvas');
+                                  if (canvas) {
+                                    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+                                    if (gl) {
+                                      gl.enable(gl.CULL_FACE);
+                                      gl.cullFace(gl.BACK);
+                                    }
+                                  }
+                                });
+                                
+                                // Error handling
+                                modelViewer.addEventListener('error', (event) => {
+                                  window.flutter_inappwebview.callHandler('onError', event.detail);
+                                });
                               }
                             ''',
                           ),
                         ),
-                        if (_isLoadingModel)
+                        if (_isLoadingModel || !_isModelLoaded)
                           Center(
                             child: Container(
-                              padding: const EdgeInsets.all(20),
+                              padding: const EdgeInsets.all(24),
                               decoration: BoxDecoration(
-                                color: Colors.black54,
-                                borderRadius: BorderRadius.circular(12),
+                                color: Colors.black87,
+                                borderRadius: BorderRadius.circular(16),
                               ),
-                              child: const Column(
+                              child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  CircularProgressIndicator(
-                                    color: Colors.white,
+                                  // Circular progress indicator
+                                  SizedBox(
+                                    width: 60,
+                                    height: 60,
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        // Background circle
+                                        SizedBox(
+                                          width: 60,
+                                          height: 60,
+                                          child: CircularProgressIndicator(
+                                            value: _modelLoadProgress > 0 ? _modelLoadProgress : null,
+                                            strokeWidth: 4,
+                                            backgroundColor: Colors.grey[800],
+                                            valueColor: const AlwaysStoppedAnimation<Color>(
+                                              Color(0xFF00796B),
+                                            ),
+                                          ),
+                                        ),
+                                        // Percentage text
+                                        if (_modelLoadProgress > 0)
+                                          Text(
+                                            '${(_modelLoadProgress * 100).toInt()}%',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
                                   ),
-                                  SizedBox(height: 12),
-                                  Text(
+                                  const SizedBox(height: 16),
+                                  // Loading text
+                                  const Text(
                                     'Loading 3D Model...',
                                     style: TextStyle(
                                       color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  // Product name
+                                  Text(
+                                    _fashionItems.firstWhere(
+                                      (item) => item['id'] == _selectedItemId,
+                                    )['name']!,
+                                    style: TextStyle(
+                                      color: Colors.grey[400],
                                       fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  // Loading stages
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey[900],
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          _modelLoadProgress < 0.3
+                                              ? Icons.cloud_download
+                                              : _modelLoadProgress < 0.7
+                                                  ? Icons.memory
+                                                  : Icons.view_in_ar,
+                                          color: const Color(0xFF00796B),
+                                          size: 16,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(
+                                          _modelLoadProgress < 0.3
+                                              ? 'Downloading...'
+                                              : _modelLoadProgress < 0.7
+                                                  ? 'Processing...'
+                                                  : 'Rendering...',
+                                          style: TextStyle(
+                                            color: Colors.grey[400],
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
@@ -734,85 +1102,135 @@ NOTE :
                     ),
                   ),
                 
-                // Image Recognition Indicator (always show, even when model is displayed)
-                Positioned(
-                  top: MediaQuery.of(context).padding.top + 8,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _isProcessingImage ? Icons.search : Icons.text_fields,
-                                color: Colors.white,
-                                size: 16,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                _isProcessingImage 
-                                    ? 'Reading text...' 
-                                    : _selectedItemId == null 
-                                        ? 'Point at poster with product name'
-                                        : 'Scanning for other products...',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
+
+                // Scanning indicator (only show when scanning, not when loading/loaded)
+                if (_isProcessingImage && !_isLoadingModel && !_isModelLoaded)
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 8,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.black87,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFF00796B),
+                            width: 2,
                           ),
-                          if (_lastDetectedLabel.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4),
-                              child: Text(
-                                _lastDetectedLabel,
-                                style: const TextStyle(
-                                  color: Colors.greenAccent,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                                textAlign: TextAlign.center,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.search,
+                              color: Color(0xFF00796B),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'Scanning image...',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
                 
+                // Detection result (show briefly after detection)
+                if (_lastDetectedLabel.isNotEmpty && !_isLoadingModel && !_isModelLoaded)
+                  Positioned(
+                    top: MediaQuery.of(context).padding.top + 8,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.black87,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.greenAccent,
+                            width: 2,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.check_circle,
+                              color: Colors.greenAccent,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Detected: $_lastDetectedLabel',
+                              style: const TextStyle(
+                                color: Colors.greenAccent,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                
+
                 // Close 3D Model button (when model is shown)
                 if (_selectedItemId != null)
                   Positioned(
                     top: MediaQuery.of(context).padding.top + 64,
                     right: 8,
-                    child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white, size: 28),
-                      onPressed: () {
-                        setState(() {
-                          _selectedItemId = null;
-                        });
-                      },
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.black54,
-                      ),
+                    child: Column(
+                      children: [
+                        // Close button
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                          onPressed: () {
+                            setState(() {
+                              _selectedItemId = null;
+                              _isModelLoaded = false;
+                              _modelLoadProgress = 0.0;
+                            });
+                          },
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.black54,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Scan again button
+                        IconButton(
+                          icon: const Icon(Icons.refresh, color: Colors.white, size: 28),
+                          onPressed: () {
+                            setState(() {
+                              _selectedItemId = null;
+                              _isModelLoaded = false;
+                              _modelLoadProgress = 0.0;
+                              _lastDetectedLabel = '';
+                              _detectedText = '';
+                              _recentLabels = [];
+                            });
+                          },
+                          style: IconButton.styleFrom(
+                            backgroundColor: const Color(0xFF00796B),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 
                 // Detail button (when model is shown)
                 if (_selectedItemId != null)
                   Positioned(
-                    top: MediaQuery.of(context).padding.top + 120,
+                    top: MediaQuery.of(context).padding.top + 176,
                     right: 8,
                     child: IconButton(
                       icon: const Icon(Icons.info_outline, color: Colors.white, size: 28),
@@ -855,16 +1273,12 @@ NOTE :
                             setState(() {
                               _selectedItemId = item['id'];
                               _isLoadingModel = true;
+                              _isModelLoaded = false;
+                              _modelLoadProgress = 0.0;
                             });
                             
-                            // Simulate model loading time
-                            Future.delayed(const Duration(seconds: 2), () {
-                              if (mounted) {
-                                setState(() {
-                                  _isLoadingModel = false;
-                                });
-                              }
-                            });
+                            // Simulate model loading progress
+                            _simulateLoadingProgress();
                           },
                           child: Container(
                             width: 110,
@@ -929,18 +1343,59 @@ NOTE :
                                   ],
                                 ),
                                 // Loading indicator on item
-                                if (isSelected && _isLoadingModel)
+                                if (isSelected && (_isLoadingModel || !_isModelLoaded))
                                   Positioned.fill(
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: Colors.black54,
+                                        color: Colors.black87,
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: const Center(
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 3,
-                                        ),
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          SizedBox(
+                                            width: 40,
+                                            height: 40,
+                                            child: Stack(
+                                              alignment: Alignment.center,
+                                              children: [
+                                                SizedBox(
+                                                  width: 40,
+                                                  height: 40,
+                                                  child: CircularProgressIndicator(
+                                                    value: _modelLoadProgress > 0 ? _modelLoadProgress : null,
+                                                    strokeWidth: 3,
+                                                    backgroundColor: Colors.grey[800],
+                                                    valueColor: const AlwaysStoppedAnimation<Color>(
+                                                      Color(0xFF00796B),
+                                                    ),
+                                                  ),
+                                                ),
+                                                if (_modelLoadProgress > 0)
+                                                  Text(
+                                                    '${(_modelLoadProgress * 100).toInt()}%',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 10,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            _modelLoadProgress < 0.3
+                                                ? 'Downloading'
+                                                : _modelLoadProgress < 0.7
+                                                    ? 'Processing'
+                                                    : 'Rendering',
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 10,
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),

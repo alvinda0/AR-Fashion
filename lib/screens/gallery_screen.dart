@@ -196,13 +196,13 @@ Harga scraft 69Rb
 Ukuran 110 x 110''',
     },
     {
-      'name': 'Valerya Pink',
+      'name': 'Valerya Dusty',
       'image': 'assets/images/valerya pink.jpg',
       'category': 'Dress',
       'description': '''Bismillahirrahmanirrahim..
 Sebelum menyimak lebih lanjut, jangan lupa shalawatan dulu yuk! Semoga jualan kita laris manis dan berkah untuk kita semua. Aamiin.. 🤲🏻
 
-VALERYA SERIES NEW
+VALERYA SERIES NEW - Dusty
 On model pakai size M
 
 Berbahan babydoll premium X rayon premium X tule premium yang sangat nyaman, adem. Modelnya simple namun looknya super mewah! Cocok banget untuk outfit daily, outfit hangout atau semi formal My Nadheera! 😍
@@ -325,6 +325,68 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
 Sebelum menyimak lebih lanjut, jangan lupa shalawatan dulu yuk! Semoga jualan kita laris manis dan berkah untuk kita semua. Aamiin.. 🤲🏻
 
 XAVIA SERIES - Cornflower Blue
+On model pakai size M
+
+Berbahan rayon premium yang sangat nyaman, adem. Modelnya simple namun looknya super mewah! Cocok banget untuk outfit daily, outfit hangout atau semi formal My Nadheera! 😍
+
+DETAIL DRESS & MIDI DRESS :
+✔️ model simpel looknya mewah dan so slimmy
+✔️ detail lengan semi puffy dengan kopel karet ( Wudlu friendly )
+✔️ detail kerah shanghai dengan detail zipper bagian depan ( Busui friendly ) 
+✔️ detail Cutting Aline super lebar 
+✔️ berlabel ORI Nadheera Luxury
+
+Size Chart Midi Dress :
+LD : 92/96/100/104/110/120
+PB : 130
+P. Lengan : 57
+
+Size Chart Dress :
+LD : 92/96/100/104/110/120
+PB : 135/138/140/140/140/140
+P. Lengan : 57
+
+HARGA NORMAL DRESS & MIDI DRESS :
+IDR 239.900,- (S)
+IDR 244.900,- (M)
+IDR 249.900,- (L)
+IDR 254.900,- (XL)
+IDR 259.900,- (XXL)
+IDR 264.900,- (XXXL)
+
+HARGA SP DRESS & MIDI DRESS S-L :
+Retail : IDR 189.900,-
+Reseller : IDR 179.900,-
+Sub Agen : IDR 169.900,-
+Agen : IDR 154.900,-
+
+HARGA SP DRESS & MIDI DRESS XL-XXXL :
+Retail : IDR 194.900,-
+Reseller : IDR 184.900,-
+Sub Agen : IDR 174.900,-
+Agen : IDR 159.900,-
+
+NOTE :
+Retail-Sub Agen : Jika order dibawah minimal +5.000,-/item
+Agen-Distributor : Jika order dibawah minimal +7.500,-/item
+
+Available Colour :
+• black
+• cornflower
+• glamour
+• mulberry
+
+OPEN LIST H+1 SETELAH LAUNCHING S/D RABU, 21 JANUARI 2026 PUKUL 08.30 WIB ‼️
+INSYALLAH LANGSUNG PEMBAGIAN📌''',
+    },
+    {
+      'name': 'Xavia Glamour',
+      'image': 'assets/images/xavia blue old.jpg',
+      'category': 'Dress',
+      'description': '''Bismillahirrahmanirrahim..
+Sebelum menyimak lebih lanjut, jangan lupa shalawatan dulu yuk! Semoga jualan kita laris manis dan berkah untuk kita semua. Aamiin.. 🤲🏻
+
+XAVIA SERIES - Glamour
 On model pakai size M
 
 Berbahan rayon premium yang sangat nyaman, adem. Modelnya simple namun looknya super mewah! Cocok banget untuk outfit daily, outfit hangout atau semi formal My Nadheera! 😍
