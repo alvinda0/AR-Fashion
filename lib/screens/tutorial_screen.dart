@@ -94,9 +94,9 @@ class TutorialScreen extends StatelessWidget {
                   
                   _buildTutorialStep(
                     2,
-                    'Posisikan Kamera',
-                    'Arahkan kamera ke wajah Anda dengan pencahayaan yang cukup. Pastikan wajah terlihat jelas dalam frame kamera.',
-                    Icons.face,
+                    'Scan Gambar Produk',
+                    'Arahkan kamera ke gambar/poster produk fashion. Aplikasi akan otomatis mendeteksi produk dari gambar atau teks yang terlihat.',
+                    Icons.qr_code_scanner,
                     isTablet,
                   ),
                   
@@ -104,9 +104,9 @@ class TutorialScreen extends StatelessWidget {
                   
                   _buildTutorialStep(
                     3,
-                    'Pilih Hijab',
-                    'Gunakan menu "Gallery" untuk memilih model hijab yang ingin dicoba. Tersedia berbagai kategori hijab yang dapat dipilih.',
-                    Icons.photo_library,
+                    'Loading Model 3D',
+                    'Setelah produk terdeteksi, model 3D akan dimuat secara otomatis. Progress loading akan ditampilkan pada item di list bawah.',
+                    Icons.downloading,
                     isTablet,
                   ),
                   
@@ -114,9 +114,9 @@ class TutorialScreen extends StatelessWidget {
                   
                   _buildTutorialStep(
                     4,
-                    'Coba Virtual Try-On',
-                    'Hijab akan muncul secara virtual pada wajah Anda. Gerakkan kepala untuk melihat hijab dari berbagai sudut.',
-                    Icons.headset_mic,
+                    'Lihat Model 3D',
+                    'Model 3D produk akan muncul di layar penuh. Anda dapat memutar, zoom, dan melihat detail produk dari berbagai sudut.',
+                    Icons.view_in_ar,
                     isTablet,
                   ),
                   
@@ -124,9 +124,19 @@ class TutorialScreen extends StatelessWidget {
                   
                   _buildTutorialStep(
                     5,
-                    'Ganti Model Hijab',
-                    'Anda dapat mengganti model hijab kapan saja dengan memilih dari galeri yang tersedia tanpa keluar dari mode AR.',
-                    Icons.swap_horiz,
+                    'Pilih Produk Lain',
+                    'Tap item di list bawah untuk melihat produk lain, atau tap tombol refresh untuk scan produk baru.',
+                    Icons.collections,
+                    isTablet,
+                  ),
+                  
+                  SizedBox(height: isTablet ? 24 : 20),
+                  
+                  _buildTutorialStep(
+                    6,
+                    'Lihat Detail Produk',
+                    'Tap tombol info (i) untuk melihat deskripsi lengkap, harga, dan detail produk.',
+                    Icons.info_outline,
                     isTablet,
                   ),
                   
@@ -167,11 +177,12 @@ class TutorialScreen extends StatelessWidget {
                         
                         SizedBox(height: isTablet ? 16 : 12),
                         
-                        _buildTipItem('Gunakan pencahayaan yang cukup untuk hasil terbaik', isTablet),
-                        _buildTipItem('Pastikan wajah berada di tengah frame kamera', isTablet),
-                        _buildTipItem('Jaga jarak sekitar 30-50 cm dari kamera', isTablet),
-                        _buildTipItem('Hindari gerakan yang terlalu cepat saat mencoba hijab', isTablet),
-                        _buildTipItem('Eksplorasi berbagai kategori hijab di Gallery', isTablet),
+                        _buildTipItem('Gunakan pencahayaan yang cukup agar gambar produk terdeteksi dengan baik', isTablet),
+                        _buildTipItem('Pastikan gambar/poster produk terlihat jelas dalam frame kamera', isTablet),
+                        _buildTipItem('Jaga jarak yang cukup agar seluruh gambar produk terlihat', isTablet),
+                        _buildTipItem('Tunggu hingga model 3D selesai loading untuk hasil terbaik', isTablet),
+                        _buildTipItem('Gunakan 2 jari untuk zoom dan 1 jari untuk memutar model 3D', isTablet),
+                        _buildTipItem('Tap tombol refresh untuk scan produk baru setelah melihat model', isTablet),
                       ],
                     ),
                   ),

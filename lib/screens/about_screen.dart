@@ -95,7 +95,7 @@ class AboutScreen extends StatelessWidget {
         SizedBox(height: isTablet ? 32 : 24),
         
         Text(
-          'Vast Hijab Store',
+          'AR Fashion',
           style: TextStyle(
             fontSize: titleSize,
             fontWeight: FontWeight.bold,
@@ -107,7 +107,7 @@ class AboutScreen extends StatelessWidget {
         SizedBox(height: isTablet ? 12 : 8),
         
         Text(
-          'Virtual Hijab Try-On Experience',
+          'Virtual Fashion 3D Experience',
           style: TextStyle(
             fontSize: subtitleSize,
             color: Colors.white70,
@@ -120,7 +120,7 @@ class AboutScreen extends StatelessWidget {
         // About the app section
         _buildInfoSection(
           'Tentang Aplikasi',
-          'Vast Hijab Store adalah aplikasi AR (Augmented Reality) yang memungkinkan Anda untuk mencoba berbagai model hijab secara virtual. Dengan teknologi canggih, Anda dapat melihat bagaimana hijab terlihat pada diri Anda sebelum memutuskan untuk membelinya.',
+          'AR Fashion adalah aplikasi yang memungkinkan Anda untuk melihat produk fashion dalam bentuk 3D secara virtual menggunakan teknologi AR (Augmented Reality). Scan gambar produk untuk melihat model 3D yang detail dan interaktif.',
           sectionTitleSize,
           bodyTextSize,
           isTablet,
@@ -131,7 +131,7 @@ class AboutScreen extends StatelessWidget {
         // Developer info section
         _buildInfoSection(
           'Pembuat Aplikasi',
-          'Aplikasi ini dikembangkan oleh:\n\nAlvinda Shahrul\nNIM: 191011450055\nProgram Studi: Teknik Informatika\n\nDikembangkan sebagai bagian dari proyek tugas akhir untuk memberikan solusi inovatif dalam berbelanja hijab menggunakan teknologi AR.',
+          'Aplikasi ini dikembangkan oleh:\n\nAlvinda Shahrul\nNIM: 191011450055\nProgram Studi: Teknik Informatika\n\nDikembangkan sebagai bagian dari proyek tugas akhir untuk memberikan solusi inovatif dalam berbelanja fashion menggunakan teknologi AR dan visualisasi 3D.',
           sectionTitleSize,
           bodyTextSize,
           isTablet,
@@ -142,7 +142,7 @@ class AboutScreen extends StatelessWidget {
         // Features section
         _buildInfoSection(
           'Fitur Utama',
-          '• AR Camera - Coba hijab secara virtual\n• Tutorial - Panduan penggunaan aplikasi\n• Gallery - Koleksi lengkap hijab\n• Responsive Design - Optimal di semua perangkat',
+          '• AR Camera - Scan gambar produk untuk melihat model 3D\n• Image Recognition - Deteksi otomatis produk dari gambar\n• 3D Model Viewer - Lihat detail produk dari berbagai sudut\n• Gallery - Koleksi lengkap produk fashion\n• Tutorial - Panduan penggunaan aplikasi\n• Responsive Design - Optimal di semua perangkat',
           sectionTitleSize,
           bodyTextSize,
           isTablet,
@@ -178,7 +178,7 @@ class AboutScreen extends StatelessWidget {
               ),
               SizedBox(height: isTablet ? 8 : 4),
               Text(
-                '© 2024 Vast Hijab Store',
+                '© 2026 AR Fashion',
                 style: TextStyle(
                   fontSize: isTablet ? 14 : 12,
                   color: Colors.white70,
@@ -235,7 +235,7 @@ class AboutScreen extends StatelessWidget {
               const SizedBox(height: 16),
               
               const Text(
-                'Vast Hijab Store',
+                'AR Fashion',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -247,7 +247,7 @@ class AboutScreen extends StatelessWidget {
               const SizedBox(height: 8),
               
               const Text(
-                'Virtual Hijab Try-On Experience',
+                'Virtual Fashion 3D Experience',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.white70,
@@ -281,7 +281,7 @@ class AboutScreen extends StatelessWidget {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      '© 2024 Vast Hijab Store',
+                      '© 2026 AR Fashion',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.white70,
@@ -304,7 +304,7 @@ class AboutScreen extends StatelessWidget {
             children: [
               _buildInfoSection(
                 'Tentang Aplikasi',
-                'Vast Hijab Store adalah aplikasi AR yang memungkinkan Anda mencoba berbagai model hijab secara virtual dengan teknologi canggih.',
+                'AR Fashion adalah aplikasi yang memungkinkan Anda melihat produk fashion dalam bentuk 3D secara virtual. Scan gambar produk untuk melihat model 3D yang detail dan interaktif.',
                 18,
                 13,
                 false,
@@ -324,7 +324,7 @@ class AboutScreen extends StatelessWidget {
               
               _buildInfoSection(
                 'Fitur Utama',
-                '• AR Camera • Tutorial • Gallery • Responsive Design',
+                '• AR Camera • Image Recognition • 3D Model Viewer • Gallery • Tutorial',
                 18,
                 13,
                 false,
