@@ -35,7 +35,7 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
       'id': 'dayana',
       'name': 'Dayana',
       'image': 'assets/images/dayana.jpg',
-      'model': 'assets/glb/dayana_blue.glb',
+      'model': 'https://qerzhadqtgkckrejxcqg.supabase.co/storage/v1/object/public/ar-fashion-glb/dayana_blue.glb',
       'category': 'Dress',
       'description': '''Bismillah…Open Katalog Seragaman💐
 
@@ -99,7 +99,7 @@ Pashmina : Rp 55.000 ,-
       'id': 'nayra',
       'name': 'Nayra',
       'image': 'assets/images/nayra.jpg',
-      'model': 'assets/glb/nayra_black.glb',
+      'model': 'https://qerzhadqtgkckrejxcqg.supabase.co/storage/v1/object/public/ar-fashion-glb/nayra_black.glb',
       'category': 'Dress',
       'description': '''NAYRA Dress AFAS X SITA
 (Open PO 19-26 Jan 2026)
@@ -140,7 +140,7 @@ NOTE :
       'id': 'sabrina_black',
       'name': 'Sabrina Black',
       'image': 'assets/images/sabrina black.jpg',
-      'model': 'assets/glb/sabrina_black.glb',
+      'model': 'https://qerzhadqtgkckrejxcqg.supabase.co/storage/v1/object/public/ar-fashion-glb/sabrina_black.glb',
       'category': 'Dress',
       'description': 'Detail produk Sabrina Black',
     },
@@ -148,7 +148,7 @@ NOTE :
       'id': 'sabrina_white',
       'name': 'Sabrina White',
       'image': 'assets/images/sabrina white.jpg',
-      'model': 'assets/glb/sabrina_white.glb',
+      'model': 'https://qerzhadqtgkckrejxcqg.supabase.co/storage/v1/object/public/ar-fashion-glb/sabrina_white.glb',
       'category': 'Dress',
       'description': 'Detail produk Sabrina White',
     },
@@ -156,7 +156,7 @@ NOTE :
       'id': 'valerya_pink',
       'name': 'Valerya Pink',
       'image': 'assets/images/valerya pink.jpg',
-      'model': 'assets/glb/valerya_pink.glb',
+      'model': 'https://qerzhadqtgkckrejxcqg.supabase.co/storage/v1/object/public/ar-fashion-glb/valerya_pink.glb',
       'category': 'Dress',
       'description': 'Detail produk Valerya Pink',
     },
@@ -164,7 +164,7 @@ NOTE :
       'id': 'xavia_black',
       'name': 'Xavia Black',
       'image': 'assets/images/xavia black.jpg',
-      'model': 'assets/glb/xavia_black.glb',
+      'model': 'https://qerzhadqtgkckrejxcqg.supabase.co/storage/v1/object/public/ar-fashion-glb/xavia_black.glb',
       'category': 'Dress',
       'description': 'Detail produk Xavia Black',
     },
@@ -172,7 +172,7 @@ NOTE :
       'id': 'xavia_blue',
       'name': 'Xavia Blue',
       'image': 'assets/images/xavia blue.jpg',
-      'model': 'assets/glb/xavia_blue.glb',
+      'model': 'https://qerzhadqtgkckrejxcqg.supabase.co/storage/v1/object/public/ar-fashion-glb/xavia_blue.glb',
       'category': 'Dress',
       'description': 'Detail produk Xavia Blue',
     },
@@ -180,7 +180,7 @@ NOTE :
       'id': 'xavia_purple',
       'name': 'Xavia Purple',
       'image': 'assets/images/xavia purple.jpg',
-      'model': 'assets/glb/xavia_purple.glb',
+      'model': 'https://qerzhadqtgkckrejxcqg.supabase.co/storage/v1/object/public/ar-fashion-glb/xavia_purple.glb',
       'category': 'Dress',
       'description': 'Detail produk Xavia Purple',
     },
@@ -669,6 +669,12 @@ NOTE :
                             shadowIntensity: 0, // Disable shadow
                             shadowSoftness: 0,
                             interactionPrompt: InteractionPrompt.none, // Remove interaction prompt
+                            // Add reveal attribute for faster initial display
+                            relatedCss: '''
+                              model-viewer {
+                                --poster-color: transparent;
+                              }
+                            ''',
                           ),
                         ),
                         if (_isLoadingModel)
