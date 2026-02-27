@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class BodyTrackingScreen extends StatelessWidget {
-  const BodyTrackingScreen({super.key});
+class TutorialScreen extends StatelessWidget {
+  const TutorialScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -11,7 +11,7 @@ class BodyTrackingScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Tutorial'),
-        backgroundColor: const Color(0xFF1E3C72),
+        backgroundColor: const Color(0xFFD5698C),
         foregroundColor: Colors.white,
       ),
       body: Container(
@@ -20,8 +20,9 @@ class BodyTrackingScreen extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF1E3C72),
-              Color(0xFF2A5298),
+              Color(0xFFD5698C),
+              Color(0xFFE7809E),
+              Color(0xFFF5A3B8),
             ],
           ),
         ),
@@ -213,7 +214,7 @@ class BodyTrackingScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: isTablet ? 18 : 16,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1E3C72),
+                  color: const Color(0xFFD5698C),
                 ),
               ),
             ),

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'screens/ar_camera_v2.dart';
-import 'screens/body_tracking_screen.dart';
+import 'screens/tutorial_screen.dart';
 import 'screens/fashion_collection_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/gallery_screen.dart';
@@ -23,7 +23,7 @@ class FashionARApp extends StatelessWidget {
     return MaterialApp(
       title: 'Vast Hijab Store',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFD5698C)),
         useMaterial3: true,
       ),
       home: const HomeScreen(),
@@ -71,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _navigateToBodyTracking() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const BodyTrackingScreen(),
+        builder: (context) => const TutorialScreen(),
       ),
     );
   }
@@ -155,8 +155,9 @@ class _HomeScreenState extends State<HomeScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF1E3C72), // Blue primary
-              Color(0xFF2A5298), // Blue lighter
+              Color(0xFFD5698C), // Rose pink darker
+              Color(0xFFE7809E), // Rose pink (logo color)
+              Color(0xFFF5A3B8), // Rose pink lighter
             ],
           ),
         ),
@@ -218,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 return Icon(
                   Icons.headset_mic,
                   size: logoSize * 0.5,
-                  color: const Color(0xFF1E3C72),
+                  color: const Color(0xFFD5698C),
                 );
               },
             ),
@@ -292,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       return const Icon(
                         Icons.headset_mic,
                         size: 50,
-                        color: Color(0xFF1E3C72),
+                        color: Color(0xFFD5698C),
                       );
                     },
                   ),
@@ -395,7 +396,7 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: _isLoading ? null : _navigateToARCamera,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.white,
-          foregroundColor: const Color(0xFF1E3C72),
+          foregroundColor: const Color(0xFFD5698C),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(isTablet ? 32 : 28),
           ),
@@ -408,7 +409,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: const CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    Color(0xFF1E3C72),
+                    Color(0xFFD5698C),
                   ),
                 ),
               )
@@ -444,11 +445,15 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: EdgeInsets.all(isTablet ? 20 : 16),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.1),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.2),
-          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
@@ -456,12 +461,12 @@ class _HomeScreenState extends State<HomeScreen> {
               width: iconSize,
               height: iconSize,
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.2),
+                color: const Color(0xFFE7809E).withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(iconSize / 2),
               ),
               child: Icon(
                 icon,
-                color: Colors.white,
+                color: const Color(0xFFD5698C),
                 size: iconSize * 0.5,
               ),
             ),
@@ -475,7 +480,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     style: TextStyle(
                       fontSize: titleSize,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: const Color(0xFF333333),
                     ),
                   ),
                   SizedBox(height: isTablet ? 6 : 4),
@@ -483,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     description,
                     style: TextStyle(
                       fontSize: descSize,
-                      color: Colors.white.withValues(alpha: 0.8),
+                      color: const Color(0xFF666666),
                     ),
                   ),
                 ],
@@ -491,7 +496,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             Icon(
               Icons.arrow_forward_ios,
-              color: Colors.white.withValues(alpha: 0.6),
+              color: const Color(0xFFD5698C),
               size: isTablet ? 20 : 16,
             ),
           ],
