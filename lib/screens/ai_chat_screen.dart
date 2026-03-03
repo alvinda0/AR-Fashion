@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
+import 'dart:convert';
 import '../models/chat_message.dart';
 import '../services/huggingface_service.dart';
 
@@ -20,17 +22,149 @@ class _AIChatScreenState extends State<AIChatScreen> {
   bool _isLoading = false;
   String? _selectedImagePath;
   String _loadingMessage = 'AI sedang mengetik...';
+  static const String _storageKey = 'ai_chat_history';
 
   @override
   void initState() {
     super.initState();
-    // Welcome message
-    _messages.add(
-      ChatMessage(
-        text: 'Halo! Saya adalah AI assistant untuk AR Fashion. Ada yang bisa saya bantu?',
-        isUser: false,
+    _loadChatHistory();
+  }
+  
+  // Load chat history dari storage
+  Future<void> _loadChatHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final historyJson = prefs.getString(_storageKey);
+      
+      print('Loading chat history...');
+      print('History JSON: $historyJson');
+      
+      if (historyJson != null && historyJson.isNotEmpty) {
+        final List<dynamic> decoded = jsonDecode(historyJson);
+        print('Decoded ${decoded.length} messages');
+        
+        setState(() {
+          _messages.clear();
+          _messages.addAll(
+            decoded.map((json) => ChatMessage.fromJson(json)).toList(),
+          );
+        });
+        
+        print('Loaded ${_messages.length} messages from storage');
+      } else {
+        print('No history found, adding welcome message');
+        // Welcome message jika belum ada history
+        setState(() {
+          _messages.add(
+            ChatMessage(
+              text: 'Halo! Saya adalah AI assistant untuk AR Fashion. Ada yang bisa saya bantu?',
+              isUser: false,
+            ),
+          );
+        });
+      }
+      
+      // Scroll ke bawah setelah load
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
+    } catch (e) {
+      print('Error loading chat history: $e');
+      // Fallback ke welcome message
+      setState(() {
+        _messages.add(
+          ChatMessage(
+            text: 'Halo! Saya adalah AI assistant untuk AR Fashion. Ada yang bisa saya bantu?',
+            isUser: false,
+          ),
+        );
+      });
+    }
+  }
+  
+  // Save chat history ke storage
+  Future<void> _saveChatHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Filter out messages dengan imagePath yang tidak valid (file sudah dihapus)
+      final messagesToSave = _messages.map((msg) {
+        // Jika ada imagePath dan itu local file, cek apakah masih ada
+        if (msg.imagePath != null && 
+            !msg.imagePath!.startsWith('http') &&
+            !File(msg.imagePath!).existsSync()) {
+          // File sudah tidak ada, jangan simpan imagePath
+          return ChatMessage(
+            text: msg.text,
+            isUser: msg.isUser,
+            timestamp: msg.timestamp,
+            imagePath: null,
+          );
+        }
+        return msg;
+      }).toList();
+      
+      final historyJson = jsonEncode(
+        messagesToSave.map((msg) => msg.toJson()).toList(),
+      );
+      
+      await prefs.setString(_storageKey, historyJson);
+      print('Saved ${messagesToSave.length} messages to storage');
+      print('Saved JSON length: ${historyJson.length} characters');
+    } catch (e) {
+      print('Error saving chat history: $e');
+    }
+  }
+  
+  // Clear chat history
+  Future<void> _clearChatHistory() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Riwayat Chat?'),
+        content: const Text('Semua percakapan akan dihapus. Lanjutkan?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Hapus',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
       ),
     );
+    
+    if (confirmed == true) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_storageKey);
+        print('Chat history cleared');
+        
+        setState(() {
+          _messages.clear();
+          _messages.add(
+            ChatMessage(
+              text: 'Halo! Saya adalah AI assistant untuk AR Fashion. Ada yang bisa saya bantu?',
+              isUser: false,
+            ),
+          );
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Riwayat chat berhasil dihapus')),
+        );
+      } catch (e) {
+        print('Error clearing chat history: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
   }
 
   @override
@@ -100,6 +234,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
 
     _messageController.clear();
     _scrollToBottom();
+    
+    // Save history setelah user kirim pesan
+    await _saveChatHistory();
 
     // Get conversation history
     final history = _messages
@@ -129,6 +266,9 @@ class _AIChatScreenState extends State<AIChatScreen> {
     });
 
     _scrollToBottom();
+    
+    // Save history setelah AI response
+    await _saveChatHistory();
   }
 
   @override
@@ -139,6 +279,44 @@ class _AIChatScreenState extends State<AIChatScreen> {
         backgroundColor: const Color(0xFF00796B),
         foregroundColor: Colors.white,
         elevation: 0,
+        actions: [
+          // Debug button (bisa dihapus nanti)
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            tooltip: 'Debug Info',
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              final historyJson = prefs.getString(_storageKey);
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Debug Info'),
+                  content: SingleChildScrollView(
+                    child: Text(
+                      'Messages in memory: ${_messages.length}\n\n'
+                      'Storage key: $_storageKey\n\n'
+                      'Stored data exists: ${historyJson != null}\n\n'
+                      'Stored data length: ${historyJson?.length ?? 0} chars\n\n'
+                      'First 200 chars:\n${historyJson?.substring(0, historyJson.length > 200 ? 200 : historyJson.length) ?? "null"}',
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          // Button New Chat
+          IconButton(
+            icon: const Icon(Icons.add_comment),
+            tooltip: 'Chat Baru',
+            onPressed: _clearChatHistory,
+          ),
+        ],
       ),
       body: Column(
         children: [
