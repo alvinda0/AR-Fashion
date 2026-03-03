@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/ar_camera_screen.dart';
 import 'screens/tutorial_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/gallery_screen.dart';
+import 'screens/ai_chat_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Load environment variables
+  await dotenv.load(fileName: ".env");
   
   // Skip fashion data service initialization for now
   // await FashionDataService().initialize();
@@ -85,6 +90,14 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const AboutScreen(),
+      ),
+    );
+  }
+
+  void _navigateToAIChat() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const AIChatScreen(),
       ),
     );
   }
@@ -341,6 +354,12 @@ class _HomeScreenState extends State<HomeScreen> {
         'title': 'AR Camera',
         'description': 'Scan gambar produk untuk melihat model 3D',
         'onTap': _navigateToARCamera,
+      },
+      {
+        'icon': Icons.chat_bubble_outline,
+        'title': 'AI Chat',
+        'description': 'Chat dengan AI assistant menggunakan Hugging Face',
+        'onTap': _navigateToAIChat,
       },
       {
         'icon': Icons.play_circle_outline,
