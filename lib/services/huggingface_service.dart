@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'fashion_context_service.dart';
 
 class HuggingFaceService {
   // Get API key from .env file (AMAN untuk GitHub)
@@ -42,10 +43,18 @@ class HuggingFaceService {
         // Build messages array (format OpenAI)
         final messages = <Map<String, dynamic>>[];
         
-        // System message
+        // System message dengan fashion context
+        final fashionContext = FashionContextService.getFashionContext();
         messages.add({
           'role': 'system',
-          'content': 'Kamu adalah AI assistant untuk aplikasi AR Fashion. Jawab dengan ramah dan membantu dalam bahasa Indonesia.',
+          'content': '''$fashionContext
+
+Kamu adalah AI assistant untuk aplikasi AR Fashion. 
+- Jawab dengan ramah dan membantu dalam bahasa Indonesia
+- Gunakan informasi produk di atas untuk memberikan rekomendasi
+- Jika ditanya tentang produk tertentu, sebutkan detail harga, bahan, warna, dan ukuran
+- Jika customer bertanya "ada dress apa?", "rekomendasi dong", atau sejenisnya, sebutkan beberapa pilihan produk
+- Berikan saran yang sesuai dengan kebutuhan customer''',
         });
         
         // Add conversation history
@@ -85,7 +94,7 @@ class HuggingFaceService {
               body: jsonEncode({
                 'model': _textModel,
                 'messages': messages,
-                'max_tokens': 200,
+                'max_tokens': 300,
                 'temperature': 0.7,
               }),
             )
