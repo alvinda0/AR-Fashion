@@ -6,12 +6,16 @@ class ImageTarget {
   final int? id;
   final String name;
   final String imageTarget;
+  final String? modelUrl;
+  final String? description;
   final DateTime? createdAt;
 
   ImageTarget({
     this.id,
     required this.name,
     required this.imageTarget,
+    this.modelUrl,
+    this.description,
     this.createdAt,
   });
 
@@ -20,6 +24,8 @@ class ImageTarget {
       if (id != null) 'id': id,
       'name': name,
       'image_target': imageTarget,
+      if (modelUrl != null) 'model_url': modelUrl,
+      if (description != null) 'description': description,
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
     };
   }
@@ -29,6 +35,8 @@ class ImageTarget {
       id: json['id'],
       name: json['name'],
       imageTarget: json['image_target'],
+      modelUrl: json['model_url'],
+      description: json['description'],
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
           : null,

@@ -14,18 +14,24 @@ class ImageTargetScreen extends StatefulWidget {
 class _ImageTargetScreenState extends State<ImageTargetScreen> {
   final ImageTargetService _service = ImageTargetService();
   final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
   List<ImageTarget> _imageTargets = [];
+  List<String> _availableModels = [];
+  String? _selectedModelUrl;
   bool _isLoading = true;
+  bool _isLoadingModels = false;
 
   @override
   void initState() {
     super.initState();
     _loadImageTargets();
+    _loadAvailableModels();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -54,136 +60,279 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
       _showErrorDialog('Error loading image targets:\n$e');
     }
   }
+  
+  Future<void> _loadAvailableModels() async {
+    setState(() => _isLoadingModels = true);
+    try {
+      if (!SupabaseConfig.isInitialized) {
+        setState(() => _isLoadingModels = false);
+        return;
+      }
+      
+      // Get list of files from ar-fashion-glb bucket
+      final files = await SupabaseConfig.client.storage
+          .from('ar-fashion-glb')
+          .list();
+      
+      final models = files
+          .where((file) => file.name.endsWith('.glb'))
+          .map((file) {
+            final url = SupabaseConfig.client.storage
+                .from('ar-fashion-glb')
+                .getPublicUrl(file.name);
+            return url;
+          })
+          .toList();
+      
+      setState(() {
+        _availableModels = models;
+        _isLoadingModels = false;
+      });
+      
+      debugPrint('✅ Loaded ${_availableModels.length} models from ar-fashion-glb');
+    } catch (e) {
+      setState(() => _isLoadingModels = false);
+      debugPrint('❌ Error loading models: $e');
+    }
+  }
 
   void _showUploadDialog() {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     
+    // Reset selected model
+    _selectedModelUrl = null;
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: isTablet ? 32 : 20,
-              right: isTablet ? 32 : 20,
-              top: isTablet ? 24 : 16,
-              bottom: MediaQuery.of(context).viewInsets.bottom + (isTablet ? 24 : 16),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(height: isTablet ? 16 : 12),
-                Container(
-                  width: isTablet ? 60 : 40,
-                  height: isTablet ? 6 : 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-                SizedBox(height: isTablet ? 28 : 20),
-                Text(
-                  'Upload Image Target',
-                  style: TextStyle(
-                    fontSize: isTablet ? 24 : 20,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF333333),
-                  ),
-                ),
-                SizedBox(height: isTablet ? 12 : 8),
-                Text(
-                  'Masukkan nama dan pilih gambar untuk image target',
-                  style: TextStyle(
-                    fontSize: isTablet ? 16 : 14,
-                    color: const Color(0xFF666666),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: isTablet ? 32 : 24),
-                
-                // Name input field
-                TextField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    labelText: 'Nama Image Target',
-                    hintText: 'Contoh: Product 1',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    prefixIcon: const Icon(Icons.label),
-                  ),
-                  textCapitalization: TextCapitalization.words,
-                ),
-                
-                SizedBox(height: isTablet ? 24 : 16),
-                
-                // Upload button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      if (_nameController.text.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Nama image target harus diisi'),
-                            backgroundColor: Colors.orange,
-                          ),
-                        );
-                        return;
-                      }
-                      Navigator.pop(context);
-                      _pickAndUploadImage(_nameController.text);
-                    },
-                    icon: const Icon(Icons.image),
-                    label: const Text('Pilih Gambar'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00796B),
-                      foregroundColor: Colors.white,
-                      minimumSize: Size(double.infinity, isTablet ? 56 : 48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.only(
+                left: isTablet ? 32 : 20,
+                right: isTablet ? 32 : 20,
+                top: isTablet ? 24 : 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + (isTablet ? 24 : 16),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(height: isTablet ? 16 : 12),
+                    Container(
+                      width: isTablet ? 60 : 40,
+                      height: isTablet ? 6 : 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(3),
                       ),
                     ),
-                  ),
-                ),
-                
-                SizedBox(height: isTablet ? 16 : 12),
-                
-                // Cancel button
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () {
-                      _nameController.clear();
-                      Navigator.pop(context);
-                    },
-                    style: TextButton.styleFrom(
-                      minimumSize: Size(double.infinity, isTablet ? 56 : 48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    SizedBox(height: isTablet ? 28 : 20),
+                    Text(
+                      'Upload Image Target',
+                      style: TextStyle(
+                        fontSize: isTablet ? 24 : 20,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF333333),
                       ),
                     ),
-                    child: Text(
-                      'Batal',
+                    SizedBox(height: isTablet ? 12 : 8),
+                    Text(
+                      'Masukkan nama, pilih model 3D, dan gambar untuk image target',
                       style: TextStyle(
                         fontSize: isTablet ? 16 : 14,
+                        color: const Color(0xFF666666),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: isTablet ? 32 : 24),
+                    
+                    // Name input field
+                    TextField(
+                      controller: _nameController,
+                      decoration: InputDecoration(
+                        labelText: 'Nama Image Target',
+                        hintText: 'Contoh: Product 1',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: const Icon(Icons.label),
+                      ),
+                      textCapitalization: TextCapitalization.words,
+                    ),
+                    
+                    SizedBox(height: isTablet ? 20 : 16),
+                    
+                    // Description input field
+                    TextField(
+                      controller: _descriptionController,
+                      decoration: InputDecoration(
+                        labelText: 'Deskripsi (Opsional)',
+                        hintText: 'Contoh: Sepatu olahraga warna hitam',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        prefixIcon: const Icon(Icons.description),
+                      ),
+                      maxLines: 3,
+                      textCapitalization: TextCapitalization.sentences,
+                    ),
+                    
+                    SizedBox(height: isTablet ? 24 : 16),
+                    
+                    // Model 3D Dropdown
+                    Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey[400]!),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: _isLoadingModels
+                          ? Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Loading models...',
+                                    style: TextStyle(
+                                      fontSize: isTablet ? 16 : 14,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : DropdownButtonFormField<String>(
+                              value: _selectedModelUrl,
+                              decoration: InputDecoration(
+                                labelText: 'Pilih Model 3D',
+                                border: InputBorder.none,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 8,
+                                ),
+                                prefixIcon: const Icon(Icons.view_in_ar),
+                              ),
+                              hint: Text(
+                                _availableModels.isEmpty
+                                    ? 'Tidak ada model tersedia'
+                                    : 'Pilih model 3D (opsional)',
+                                style: TextStyle(
+                                  fontSize: isTablet ? 16 : 14,
+                                ),
+                              ),
+                              items: _availableModels.map((url) {
+                                final fileName = url.split('/').last;
+                                final displayName = fileName
+                                    .replaceAll('.glb', '')
+                                    .replaceAll('_', ' ')
+                                    .split(' ')
+                                    .map((word) => word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
+                                    .join(' ');
+                                
+                                return DropdownMenuItem<String>(
+                                  value: url,
+                                  child: Text(
+                                    displayName,
+                                    style: TextStyle(
+                                      fontSize: isTablet ? 16 : 14,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                setModalState(() {
+                                  _selectedModelUrl = value;
+                                });
+                              },
+                            ),
+                    ),
+                    
+                    SizedBox(height: isTablet ? 24 : 16),
+                    
+                    // Upload button
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          if (_nameController.text.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Nama image target harus diisi'),
+                                backgroundColor: Colors.orange,
+                              ),
+                            );
+                            return;
+                          }
+                          Navigator.pop(context);
+                          _pickAndUploadImage(
+                            _nameController.text,
+                            _selectedModelUrl,
+                            _descriptionController.text.isEmpty 
+                                ? null 
+                                : _descriptionController.text,
+                          );
+                        },
+                        icon: const Icon(Icons.image),
+                        label: const Text('Pilih Gambar'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF00796B),
+                          foregroundColor: Colors.white,
+                          minimumSize: Size(double.infinity, isTablet ? 56 : 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
+                    
+                    SizedBox(height: isTablet ? 16 : 12),
+                    
+                    // Cancel button
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton(
+                        onPressed: () {
+                          _nameController.clear();
+                          _descriptionController.clear();
+                          _selectedModelUrl = null;
+                          Navigator.pop(context);
+                        },
+                        style: TextButton.styleFrom(
+                          minimumSize: Size(double.infinity, isTablet ? 56 : 48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: Text(
+                          'Batal',
+                          style: TextStyle(
+                            fontSize: isTablet ? 16 : 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    SizedBox(height: isTablet ? 16 : 12),
+                  ],
                 ),
-                
-                SizedBox(height: isTablet ? 16 : 12),
-              ],
+              ),
             ),
           ),
         ),
@@ -191,7 +340,7 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
     );
   }
 
-  Future<void> _pickAndUploadImage(String name) async {
+  Future<void> _pickAndUploadImage(String name, String? modelUrl, String? description) async {
     try {
       // Check Supabase initialization
       if (!SupabaseConfig.isInitialized) {
@@ -241,10 +390,12 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
           imageFileName,
         );
 
-        // Create image target
+        // Create image target with model URL
         final imageTarget = ImageTarget(
           name: name,
           imageTarget: imageUrl,
+          modelUrl: modelUrl,
+          description: description,
           createdAt: DateTime.now(),
         );
 
@@ -258,6 +409,8 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
 
         // Clear name controller
         _nameController.clear();
+        _descriptionController.clear();
+        _selectedModelUrl = null;
 
         // Reload list
         await _loadImageTargets();
@@ -266,7 +419,11 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Image target "$name" berhasil diupload!'),
+              content: Text(
+                modelUrl != null
+                    ? 'Image target "$name" dengan model 3D berhasil diupload!'
+                    : 'Image target "$name" berhasil diupload!',
+              ),
               backgroundColor: Colors.green,
             ),
           );
@@ -342,6 +499,7 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Image.network(
                     target.imageTarget,
@@ -359,11 +517,130 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
                     'ID: ${target.id}',
                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
+                  if (target.description != null && target.description!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Deskripsi:',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      target.description!,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
                   if (target.createdAt != null) ...[
                     const SizedBox(height: 4),
                     Text(
                       'Uploaded: ${target.createdAt!.day}/${target.createdAt!.month}/${target.createdAt!.year}',
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                  if (target.modelUrl != null && target.modelUrl!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.view_in_ar,
+                          size: 16,
+                          color: Color(0xFF00796B),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Model 3D:',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      target.modelUrl!.split('/').last,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF00796B).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFF00796B),
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            size: 14,
+                            color: Color(0xFF00796B),
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'Model 3D tersedia',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF00796B),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Colors.orange,
+                        ),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.warning_amber,
+                            size: 14,
+                            color: Colors.orange,
+                          ),
+                          SizedBox(width: 6),
+                          Text(
+                            'Model 3D belum dipilih',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.orange,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ],
@@ -579,15 +856,46 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    target.name,
-                    style: TextStyle(
-                      fontSize: isTablet ? 14 : 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          target.name,
+                          style: TextStyle(
+                            fontSize: isTablet ? 14 : 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (target.modelUrl != null && target.modelUrl!.isNotEmpty)
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00796B).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Icon(
+                            Icons.view_in_ar,
+                            size: 14,
+                            color: Color(0xFF00796B),
+                          ),
+                        ),
+                    ],
                   ),
+                  if (target.description != null && target.description!.isNotEmpty) ...[
+                    SizedBox(height: isTablet ? 4 : 2),
+                    Text(
+                      target.description!,
+                      style: TextStyle(
+                        fontSize: isTablet ? 11 : 10,
+                        color: Colors.grey[600],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                   if (target.createdAt != null) ...[
                     SizedBox(height: isTablet ? 4 : 2),
                     Text(

@@ -4,7 +4,8 @@ import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
-import 'dart:ui' as ui;
+import '../services/image_target_service.dart';
+import '../config/supabase_config.dart';
 
 class ARCameraScreen extends StatefulWidget {
   const ARCameraScreen({super.key});
@@ -28,12 +29,13 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
   final TextRecognizer _textRecognizer = TextRecognizer();
   Timer? _recognitionTimer;
   bool _isProcessingImage = false;
-  final Map<String, ui.Image> _referenceImages = {};
   String _lastDetectedLabel = '';
-  List<String> _recentLabels = [];
-  String _detectedText = '';
   
-  // Fashion items data
+  // Image Target Service
+  final ImageTargetService _imageTargetService = ImageTargetService();
+  List<ImageTarget> _imageTargets = [];
+  
+  // Fashion items data (fallback/default)
   final List<Map<String, String>> _fashionItems = [
     {
       'id': 'dayana',
@@ -313,8 +315,73 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
   @override
   void initState() {
     super.initState();
+    _loadImageTargetsFromSupabase();
     _initializeCamera();
-    _loadReferenceImages();
+  }
+  
+  Future<void> _loadImageTargetsFromSupabase() async {
+    try {
+      if (!SupabaseConfig.isInitialized) {
+        debugPrint('⚠️ Supabase not initialized, using fallback data');
+        setState(() => _isLoading = false);
+        return;
+      }
+      
+      final targets = await _imageTargetService.getImageTargets();
+      setState(() {
+        _imageTargets = targets;
+      });
+      
+      debugPrint('✅ Loaded ${_imageTargets.length} image targets from Supabase');
+      for (var target in _imageTargets) {
+        debugPrint('  - ${target.name}: ${target.imageTarget}');
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading image targets: $e');
+    }
+  }
+  
+  // Helper function to get model URL
+  String _getModelUrl(String? itemId) {
+    if (itemId == null) return '';
+    
+    // First, try to find in image targets from Supabase
+    final target = _imageTargets.firstWhere(
+      (t) => t.name == itemId,
+      orElse: () => ImageTarget(name: '', imageTarget: ''),
+    );
+    
+    if (target.name.isNotEmpty && target.modelUrl != null && target.modelUrl!.isNotEmpty) {
+      return target.modelUrl!;
+    }
+    
+    // Fallback to fashion items
+    final item = _fashionItems.firstWhere(
+      (item) => item['id'] == itemId || item['name'] == itemId,
+      orElse: () => {},
+    );
+    
+    return item['model'] ?? '';
+  }
+  
+  // Helper function to get all items (image targets + fashion items)
+  List<Map<String, String>> _getAllItems() {
+    List<Map<String, String>> allItems = [];
+    
+    // Add image targets from Supabase ONLY
+    for (var target in _imageTargets) {
+      allItems.add({
+        'id': target.name,
+        'name': target.name,
+        'image': target.imageTarget,
+        'model': target.modelUrl ?? '',
+      });
+    }
+    
+    // Don't add fallback fashion items to the list
+    // Only use them for detection fallback, not for display
+    
+    return allItems;
   }
 
   @override
@@ -324,19 +391,6 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
     _textRecognizer.close();
     _cameraController?.dispose();
     super.dispose();
-  }
-  
-  Future<void> _loadReferenceImages() async {
-    for (var item in _fashionItems) {
-      try {
-        final ByteData data = await rootBundle.load(item['image']!);
-        final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-        final frame = await codec.getNextFrame();
-        _referenceImages[item['id']!] = frame.image;
-      } catch (e) {
-        debugPrint('Error loading reference image ${item['id']}: $e');
-      }
-    }
   }
 
   Future<void> _initializeCamera() async {
@@ -422,13 +476,6 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
       debugPrint('=== Text Detected ===');
       debugPrint(detectedText);
       
-      // Update UI with detected text
-      if (mounted) {
-        setState(() {
-          _detectedText = detectedText;
-        });
-      }
-      
       // Check if any product name is in the detected text
       String? matchedFromText = _findMatchingItemFromText(detectedText);
       if (matchedFromText != null && _selectedItemId != matchedFromText) {
@@ -462,10 +509,9 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
         debugPrint('Label: ${label.label}, Confidence: ${label.confidence}');
       }
       
-      // Update UI with recent labels
+      // Update UI with last detected label
       if (mounted && labels.isNotEmpty) {
         setState(() {
-          _recentLabels = labels.take(5).map((l) => '${l.label} (${(l.confidence * 100).toInt()}%)').toList();
           _lastDetectedLabel = labels.first.label;
         });
       }
@@ -504,72 +550,26 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
     final cleanText = lowerText.replaceAll(RegExp(r'[^\w\s]'), ' ').replaceAll(RegExp(r'\s+'), ' ');
     debugPrint('Cleaned text: $cleanText');
     
-    // Check for product names in text (case insensitive, flexible matching)
-    if (cleanText.contains('dayana') || cleanText.contains('daiana') || cleanText.contains('diana')) {
-      debugPrint('✓ Found DAYANA in text');
-      return 'dayana';
-    }
-    if (cleanText.contains('nayra') || cleanText.contains('naira') || cleanText.contains('nayla')) {
-      debugPrint('✓ Found NAYRA in text');
-      return 'nayra';
-    }
-    if (cleanText.contains('sabrina') || cleanText.contains('sabina')) {
-      debugPrint('✓ Found SABRINA in text');
-      if (cleanText.contains('black') || cleanText.contains('hitam')) {
-        debugPrint('  → Variant: BLACK');
-        return 'sabrina_black';
+    // Check against image targets from Supabase
+    for (var target in _imageTargets) {
+      final targetName = target.name.toLowerCase();
+      
+      // Check if target name is in the text
+      if (cleanText.contains(targetName)) {
+        debugPrint('✓ Found ${target.name} in text');
+        return target.name;
       }
-      if (cleanText.contains('white') || cleanText.contains('putih')) {
-        debugPrint('  → Variant: WHITE');
-        return 'sabrina_white';
+      
+      // Check for partial matches (at least 3 characters)
+      if (targetName.length >= 3) {
+        final words = cleanText.split(' ');
+        for (var word in words) {
+          if (word.length >= 3 && targetName.contains(word)) {
+            debugPrint('✓ Found partial match for ${target.name}: $word');
+            return target.name;
+          }
+        }
       }
-      return 'sabrina_black'; // default
-    }
-    if (cleanText.contains('valerya') || cleanText.contains('valeria') || cleanText.contains('valery')) {
-      debugPrint('✓ Found VALERYA in text');
-      return 'valerya_dusty';
-    }
-    if (cleanText.contains('xavia') || cleanText.contains('xafia') || cleanText.contains('xavier')) {
-      debugPrint('✓ Found XAVIA in text');
-      if (cleanText.contains('black') || cleanText.contains('hitam')) {
-        debugPrint('  → Variant: BLACK');
-        return 'xavia_black';
-      }
-      if (cleanText.contains('blue') || cleanText.contains('biru') || cleanText.contains('cornflower')) {
-        debugPrint('  → Variant: CORNFLOWER BLUE');
-        return 'xavia_blue';
-      }
-      if (cleanText.contains('glamour') || cleanText.contains('glamor')) {
-        debugPrint('  → Variant: GLAMOUR');
-        return 'xavia_glamour';
-      }
-      if (cleanText.contains('purple') || cleanText.contains('ungu') || cleanText.contains('violet') || cleanText.contains('mulberry')) {
-        debugPrint('  → Variant: PURPLE');
-        return 'xavia_purple';
-      }
-      return 'xavia_black'; // default
-    }
-    
-    // Check for color keywords alone (if no product name found)
-    if (cleanText.contains('blue') || cleanText.contains('biru') || cleanText.contains('cornflower')) {
-      debugPrint('✓ Found BLUE/CORNFLOWER color - matching xavia cornflower blue');
-      return 'xavia_blue';
-    }
-    if (cleanText.contains('black') || cleanText.contains('hitam')) {
-      debugPrint('✓ Found BLACK color - matching nayra');
-      return 'nayra';
-    }
-    if (cleanText.contains('white') || cleanText.contains('putih')) {
-      debugPrint('✓ Found WHITE color - matching sabrina white');
-      return 'sabrina_white';
-    }
-    if (cleanText.contains('pink') || cleanText.contains('merah muda') || cleanText.contains('dusty')) {
-      debugPrint('✓ Found PINK/DUSTY color - matching valerya');
-      return 'valerya_dusty';
-    }
-    if (cleanText.contains('purple') || cleanText.contains('ungu') || cleanText.contains('violet')) {
-      debugPrint('✓ Found PURPLE color - matching xavia purple');
-      return 'xavia_purple';
     }
     
     debugPrint('✗ No product name found in text');
@@ -647,37 +647,11 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
         lowerLabel.contains('text') ||
         lowerLabel.contains('advertisement') ||
         lowerLabel.contains('flyer')) {
-      debugPrint('✓ Detected VISUAL CONTENT - showing fashion item');
-      // Cycle through items based on current selection
-      if (_selectedItemId == null) {
-        return _fashionItems.first['id'];
-      } else {
-        final currentIndex = _fashionItems.indexWhere((item) => item['id'] == _selectedItemId);
-        final nextIndex = (currentIndex + 1) % _fashionItems.length;
-        return _fashionItems[nextIndex]['id'];
+      debugPrint('✓ Detected VISUAL CONTENT - showing first image target');
+      // Return first image target if available
+      if (_imageTargets.isNotEmpty) {
+        return _imageTargets.first.name;
       }
-    }
-    
-    // Match based on color keywords
-    if (lowerLabel.contains('blue') || lowerLabel.contains('azure') || lowerLabel.contains('cornflower')) {
-      debugPrint('✓ Detected BLUE/CORNFLOWER - matching xavia cornflower blue');
-      return 'xavia_blue';
-    }
-    if (lowerLabel.contains('black') || lowerLabel.contains('dark')) {
-      debugPrint('✓ Detected BLACK - matching nayra');
-      return 'nayra';
-    }
-    if (lowerLabel.contains('white') || lowerLabel.contains('light')) {
-      debugPrint('✓ Detected WHITE - matching sabrina white');
-      return 'sabrina_white';
-    }
-    if (lowerLabel.contains('pink') || lowerLabel.contains('rose') || lowerLabel.contains('dusty')) {
-      debugPrint('✓ Detected PINK/DUSTY - matching valerya');
-      return 'valerya_dusty';
-    }
-    if (lowerLabel.contains('purple') || lowerLabel.contains('violet') || lowerLabel.contains('lavender')) {
-      debugPrint('✓ Detected PURPLE - matching xavia purple');
-      return 'xavia_purple';
     }
     
     // Match based on clothing keywords - very broad
@@ -691,8 +665,10 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
         lowerLabel.contains('wear') ||
         lowerLabel.contains('outfit') ||
         lowerLabel.contains('attire')) {
-      debugPrint('✓ Detected CLOTHING - showing first item');
-      return _fashionItems.first['id'];
+      debugPrint('✓ Detected CLOTHING - showing first image target');
+      if (_imageTargets.isNotEmpty) {
+        return _imageTargets.first.name;
+      }
     }
     
     // Match person/model - show fashion item
@@ -701,8 +677,10 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
         lowerLabel.contains('model') ||
         lowerLabel.contains('human') ||
         lowerLabel.contains('face')) {
-      debugPrint('✓ Detected PERSON/MODEL - showing fashion item');
-      return _fashionItems.first['id'];
+      debugPrint('✓ Detected PERSON/MODEL - showing first image target');
+      if (_imageTargets.isNotEmpty) {
+        return _imageTargets.first.name;
+      }
     }
     
     debugPrint('✗ No match found for: $lowerLabel');
@@ -712,7 +690,27 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
   void _showProductDetail() {
     if (_selectedItemId == null) return;
     
-    final item = _fashionItems.firstWhere((item) => item['id'] == _selectedItemId);
+    // Find the image target by name from Supabase
+    final target = _imageTargets.firstWhere(
+      (t) => t.name == _selectedItemId,
+      orElse: () => ImageTarget(
+        name: _selectedItemId!,
+        imageTarget: '',
+      ),
+    );
+    
+    // Fallback to fashion items if not found in Supabase
+    Map<String, String>? fallbackItem;
+    if (target.imageTarget.isEmpty) {
+      fallbackItem = _fashionItems.firstWhere(
+        (item) => item['id'] == _selectedItemId || item['name'] == _selectedItemId,
+        orElse: () => {},
+      );
+    }
+    
+    final displayName = target.name.isNotEmpty ? target.name : (fallbackItem?['name'] ?? _selectedItemId!);
+    final displayImage = target.imageTarget.isNotEmpty ? target.imageTarget : (fallbackItem?['image'] ?? '');
+    final displayDescription = target.description ?? fallbackItem?['description'] ?? 'Tidak ada deskripsi tersedia.';
     
     showModalBottomSheet(
       context: context,
@@ -740,7 +738,7 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
                   children: [
                     Expanded(
                       child: Text(
-                        item['name']!,
+                        displayName,
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -766,85 +764,187 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Image and category
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 140,
-                            height: 200,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.1),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.asset(
-                                item['image']!,
-                                fit: BoxFit.cover,
+                      // Image and info
+                      if (displayImage.isNotEmpty)
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 140,
+                              height: 200,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.1),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: displayImage.startsWith('http')
+                                    ? Image.network(
+                                        displayImage,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Container(
+                                            color: Colors.grey[200],
+                                            child: const Icon(
+                                              Icons.broken_image,
+                                              size: 48,
+                                              color: Colors.grey,
+                                            ),
+                                          );
+                                        },
+                                      )
+                                    : Image.asset(
+                                        displayImage,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Container(
+                                            color: Colors.grey[200],
+                                            child: const Icon(
+                                              Icons.broken_image,
+                                              size: 48,
+                                              color: Colors.grey,
+                                            ),
+                                          );
+                                        },
+                                      ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF00796B).withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: const Color(0xFF00796B)),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF00796B).withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: const Color(0xFF00796B)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(
+                                          Icons.check_circle,
+                                          size: 14,
+                                          color: Color(0xFF00796B),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          target.imageTarget.isNotEmpty ? 'From Supabase' : 'Fallback Data',
+                                          style: const TextStyle(
+                                            fontSize: 11,
+                                            color: Color(0xFF00796B),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  child: Text(
-                                    item['category'] ?? 'Dress',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF00796B),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    'Fashion Item',
+                                    style: TextStyle(
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: 12),
-                                const Text(
-                                  'Koleksi Premium',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Bahan premium dengan kualitas terbaik',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
+                                  const SizedBox(height: 8),
+                                  if (target.modelUrl != null && target.modelUrl!.isNotEmpty)
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.view_in_ar,
+                                          size: 14,
+                                          color: Color(0xFF00796B),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Expanded(
+                                          child: Text(
+                                            '3D Model tersedia',
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.grey[600],
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  if (target.createdAt != null) ...[
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_today,
+                                          size: 12,
+                                          color: Colors.grey[500],
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '${target.createdAt!.day}/${target.createdAt!.month}/${target.createdAt!.year}',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.grey[500],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
                       const SizedBox(height: 16),
                       const Divider(),
                       const SizedBox(height: 12),
                       
-                      // Description
-                      Text(
-                        item['description'] ?? 'Detail produk ${item['name']}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          height: 1.6,
+                      // Description Header
+                      const Row(
+                        children: [
+                          Icon(
+                            Icons.description,
+                            size: 18,
+                            color: Color(0xFF00796B),
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            'Deskripsi Produk',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF00796B),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      // Description Content
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey[200]!),
+                        ),
+                        child: Text(
+                          displayDescription,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            height: 1.6,
+                            color: Colors.black87,
+                          ),
                         ),
                       ),
+                      
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
@@ -891,9 +991,7 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
                         Positioned.fill(
                           child: ModelViewer(
                             key: ValueKey(_selectedItemId), // Force rebuild when item changes
-                            src: _fashionItems.firstWhere(
-                              (item) => item['id'] == _selectedItemId,
-                            )['model']!,
+                            src: _getModelUrl(_selectedItemId),
                             alt: 'Fashion 3D Model',
                             ar: true,
                             autoRotate: false,
@@ -1021,9 +1119,7 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
                                   const SizedBox(height: 8),
                                   // Product name
                                   Text(
-                                    _fashionItems.firstWhere(
-                                      (item) => item['id'] == _selectedItemId,
-                                    )['name']!,
+                                    _selectedItemId ?? 'Loading...',
                                     style: TextStyle(
                                       color: Colors.grey[400],
                                       fontSize: 14,
@@ -1215,8 +1311,6 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
                               _isModelLoaded = false;
                               _modelLoadProgress = 0.0;
                               _lastDetectedLabel = '';
-                              _detectedText = '';
-                              _recentLabels = [];
                             });
                           },
                           style: IconButton.styleFrom(
@@ -1263,15 +1357,16 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
                     child: ListView.builder(
                       scrollDirection: Axis.horizontal,
                       padding: const EdgeInsets.all(16),
-                      itemCount: _fashionItems.length,
+                      itemCount: _getAllItems().length,
                       itemBuilder: (context, index) {
-                        final item = _fashionItems[index];
-                        final isSelected = _selectedItemId == item['id'];
+                        final allItems = _getAllItems();
+                        final item = allItems[index];
+                        final isSelected = _selectedItemId == item['id'] || _selectedItemId == item['name'];
                         
                         return GestureDetector(
                           onTap: () {
                             setState(() {
-                              _selectedItemId = item['id'];
+                              _selectedItemId = item['name'] ?? item['id'];
                               _isLoadingModel = true;
                               _isModelLoaded = false;
                               _modelLoadProgress = 0.0;
@@ -1310,20 +1405,35 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
                                       ),
                                       child: ClipRRect(
                                         borderRadius: BorderRadius.circular(11),
-                                        child: Image.asset(
-                                          item['image']!,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (context, error, stackTrace) {
-                                            return Container(
-                                              color: Colors.grey[200],
-                                              child: Icon(
-                                                Icons.image_not_supported,
-                                                size: 32,
-                                                color: Colors.grey[400],
+                                        child: item['image']!.startsWith('http')
+                                            ? Image.network(
+                                                item['image']!,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) {
+                                                  return Container(
+                                                    color: Colors.grey[200],
+                                                    child: Icon(
+                                                      Icons.image_not_supported,
+                                                      size: 32,
+                                                      color: Colors.grey[400],
+                                                    ),
+                                                  );
+                                                },
+                                              )
+                                            : Image.asset(
+                                                item['image']!,
+                                                fit: BoxFit.cover,
+                                                errorBuilder: (context, error, stackTrace) {
+                                                  return Container(
+                                                    color: Colors.grey[200],
+                                                    child: Icon(
+                                                      Icons.image_not_supported,
+                                                      size: 32,
+                                                      color: Colors.grey[400],
+                                                    ),
+                                                  );
+                                                },
                                               ),
-                                            );
-                                          },
-                                        ),
                                       ),
                                     ),
                                     const SizedBox(height: 6),
