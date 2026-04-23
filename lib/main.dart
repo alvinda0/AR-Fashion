@@ -4,6 +4,7 @@ import 'screens/ar_camera_screen.dart';
 import 'screens/tutorial_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/gallery_screen.dart';
+import 'screens/upload_model_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -79,6 +80,14 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const GalleryScreen(),
+      ),
+    );
+  }
+
+  void _navigateToUploadModel() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const UploadModelScreen(),
       ),
     );
   }
@@ -355,6 +364,12 @@ class _HomeScreenState extends State<HomeScreen> {
         'title': 'Gallery',
         'description': 'Koleksi lengkap produk fashion',
         'onTap': _navigateToGallery,
+      },
+      {
+        'icon': Icons.cloud_upload,
+        'title': 'Upload Model',
+        'description': 'Upload model 3D custom Anda',
+        'onTap': _navigateToUploadModel,
       },
       {
         'icon': Icons.info_outline,

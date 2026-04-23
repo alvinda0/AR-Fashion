@@ -51,6 +51,12 @@ dependencies:
   
   # 3D model rendering
   model_viewer_plus: ^1.7.2
+  
+  # File picker for uploading models
+  file_picker: ^8.1.6
+  
+  # Shared preferences for storing model paths
+  shared_preferences: ^2.3.4
 
 dev_dependencies:
   flutter_test:
