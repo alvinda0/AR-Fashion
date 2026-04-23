@@ -479,179 +479,6 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
     }
   }
 
-  void _showImagePreview(ImageTarget target) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppBar(
-              title: Text(target.name),
-              automaticallyImplyLeading: false,
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-              ],
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Image.network(
-                    target.imageTarget,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Icon(
-                        Icons.broken_image,
-                        size: 100,
-                        color: Colors.grey,
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'ID: ${target.id}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  if (target.description != null && target.description!.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Deskripsi:',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      target.description!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                  if (target.createdAt != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'Uploaded: ${target.createdAt!.day}/${target.createdAt!.month}/${target.createdAt!.year}',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                  if (target.modelUrl != null && target.modelUrl!.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.view_in_ar,
-                          size: 16,
-                          color: Color(0xFF00796B),
-                        ),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Model 3D:',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      target.modelUrl!.split('/').last,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF00796B).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFF00796B),
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.check_circle,
-                            size: 14,
-                            color: Color(0xFF00796B),
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            'Model 3D tersedia',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Color(0xFF00796B),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ] else ...[
-                    const SizedBox(height: 12),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: Colors.orange,
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.warning_amber,
-                            size: 14,
-                            color: Colors.orange,
-                          ),
-                          SizedBox(width: 6),
-                          Text(
-                            'Model 3D belum dipilih',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.orange,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
@@ -720,42 +547,14 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
                   : Column(
                       children: [
                         // Info banner
-                        Container(
-                          margin: EdgeInsets.all(isTablet ? 24 : 16),
-                          padding: EdgeInsets.all(isTablet ? 20 : 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                color: Colors.white,
-                                size: isTablet ? 24 : 20,
-                              ),
-                              SizedBox(width: isTablet ? 16 : 12),
-                              Expanded(
-                                child: Text(
-                                  'Klik tombol "Upload" di header untuk menambah image target baru',
-                                  style: TextStyle(
-                                    fontSize: isTablet ? 14 : 12,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        
                         // Image targets grid
                         Expanded(
                           child: GridView.builder(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: isTablet ? 24 : 16,
+                            padding: EdgeInsets.only(
+                              left: isTablet ? 24 : 16,
+                              right: isTablet ? 24 : 16,
+                              top: isTablet ? 24 : 16,
+                              bottom: isTablet ? 24 : 16,
                             ),
                             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: isTablet ? 3 : 2,
@@ -795,35 +594,25 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
               color: Colors.white70,
             ),
           ),
-          SizedBox(height: isTablet ? 12 : 8),
-          Text(
-            'Klik tombol "Upload" di header untuk memulai',
-            style: TextStyle(
-              fontSize: isTablet ? 14 : 12,
-              color: Colors.white.withValues(alpha: 0.6),
-            ),
-          ),
         ],
       ),
     );
   }
 
   Widget _buildImageCard(ImageTarget target, bool isTablet) {
-    return GestureDetector(
-      onTap: () => _showImagePreview(target),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Image
@@ -927,7 +716,6 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
             ),
           ],
         ),
-      ),
     );
   }
 }
