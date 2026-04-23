@@ -42,6 +42,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+
+  
   Future<void> _navigateToARCamera() async {
 
     try {
@@ -65,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _navigateToBodyTracking() {
+  void _navigateToTutorial() {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const TutorialScreen(),
@@ -346,7 +348,7 @@ class _HomeScreenState extends State<HomeScreen> {
         'icon': Icons.play_circle_outline,
         'title': 'Tutorial',
         'description': 'Panduan penggunaan aplikasi AR',
-        'onTap': _navigateToBodyTracking,
+        'onTap': _navigateToTutorial,
       },
       {
         'icon': Icons.photo_library,
