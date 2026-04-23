@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/custom_model_service.dart';
+import '../config/supabase_config.dart';
 
 class UploadModelScreen extends StatefulWidget {
   const UploadModelScreen({super.key});
@@ -13,12 +14,15 @@ class UploadModelScreen extends StatefulWidget {
 class _UploadModelScreenState extends State<UploadModelScreen> {
   final CustomModelService _modelService = CustomModelService();
   List<CustomModel> _customModels = [];
+  List<Map<String, String>> _fashionModels = [];
   bool _isLoading = true;
+  bool _isLoadingFashionModels = false;
 
   @override
   void initState() {
     super.initState();
     _loadCustomModels();
+    _loadFashionModels();
   }
 
   Future<void> _loadCustomModels() async {
@@ -32,6 +36,53 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       _showErrorDialog('Error loading models: $e');
+    }
+  }
+  
+  Future<void> _loadFashionModels() async {
+    setState(() => _isLoadingFashionModels = true);
+    try {
+      // Import Supabase config
+      final supabase = SupabaseConfig.client;
+      
+      // Get list of files from ar-fashion-glb bucket
+      final files = await supabase.storage
+          .from('ar-fashion-glb')
+          .list();
+      
+      final models = files
+          .where((file) => file.name.endsWith('.glb'))
+          .map((file) {
+            final url = supabase.storage
+                .from('ar-fashion-glb')
+                .getPublicUrl(file.name);
+            
+            // Format display name
+            final displayName = file.name
+                .replaceAll('.glb', '')
+                .replaceAll('_', ' ')
+                .split(' ')
+                .map((word) => word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1))
+                .join(' ');
+            
+            return {
+              'name': displayName,
+              'fileName': file.name,
+              'url': url,
+              'size': file.metadata?['size']?.toString() ?? '0',
+            };
+          })
+          .toList();
+      
+      setState(() {
+        _fashionModels = models;
+        _isLoadingFashionModels = false;
+      });
+      
+      debugPrint('✅ Loaded ${_fashionModels.length} fashion models from ar-fashion-glb');
+    } catch (e) {
+      setState(() => _isLoadingFashionModels = false);
+      debugPrint('❌ Error loading fashion models: $e');
     }
   }
 
@@ -467,6 +518,113 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
       }
     }
   }
+  
+  Future<void> _deleteFashionModel(Map<String, String> model) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Hapus Model Fashion'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Apakah Anda yakin ingin menghapus "${model['name']}"?'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.warning_amber,
+                    color: Colors.orange,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'File akan dihapus dari Supabase storage ar-fashion-glb',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange[900],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Batal'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      // Show loading
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Menghapus dari Supabase...'),
+              ],
+            ),
+          ),
+        );
+      }
+      
+      try {
+        final supabase = SupabaseConfig.client;
+        
+        // Delete from ar-fashion-glb bucket
+        await supabase.storage
+            .from('ar-fashion-glb')
+            .remove([model['fileName']!]);
+        
+        // Close loading dialog
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+        
+        // Reload fashion models
+        await _loadFashionModels();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Model "${model['name']}" berhasil dihapus dari Supabase'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } catch (e) {
+        // Close loading dialog
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+        _showErrorDialog('Error deleting fashion model: $e');
+      }
+    }
+  }
 
   void _showErrorDialog(String message) {
     showDialog(
@@ -605,62 +763,78 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
                     color: Colors.white,
                   ),
                 )
-              : _customModels.isEmpty
+              : _customModels.isEmpty && _fashionModels.isEmpty
                   ? _buildEmptyState(isTablet)
-                  : Column(
-                      children: [
-                        // Info banner
-                        Container(
-                          margin: EdgeInsets.all(isTablet ? 24 : 16),
-                          padding: EdgeInsets.all(isTablet ? 20 : 16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.2),
+                  : LayoutBuilder(
+                      builder: (context, constraints) {
+                        return SingleChildScrollView(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(
+                              minHeight: constraints.maxHeight,
                             ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                color: Colors.white,
-                                size: isTablet ? 24 : 20,
-                              ),
-                              SizedBox(width: isTablet ? 16 : 12),
-                              Expanded(
-                                child: Text(
-                                  'Klik tombol "Upload" di header untuk menambah model baru',
-                                  style: TextStyle(
-                                    fontSize: isTablet ? 14 : 12,
-                                    color: Colors.white,
-                                  ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(height: isTablet ? 24 : 16),
+                                
+                                // Fashion Models Section (from ar-fashion-glb)
+                                if (_isLoadingFashionModels) ...[
+                            Padding(
+                              padding: EdgeInsets.all(isTablet ? 24 : 16),
+                              child: Center(
+                                child: Column(
+                                  children: [
+                                    const CircularProgressIndicator(
+                                      color: Colors.white,
+                                    ),
+                                    SizedBox(height: isTablet ? 16 : 12),
+                                    Text(
+                                      'Loading fashion models...',
+                                      style: TextStyle(
+                                        fontSize: isTablet ? 14 : 12,
+                                        color: Colors.white70,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
-                          ),
-                        ),
-                        
-                        // Models list
-                        Expanded(
-                          child: ListView.builder(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: isTablet ? 24 : 16,
                             ),
-                            itemCount: _customModels.length,
-                            itemBuilder: (context, index) {
-                              final model = _customModels[index];
+                          ] else if (_fashionModels.isNotEmpty) ...[
+                            // Fashion models list
+                            ..._fashionModels.map((model) {
                               return Padding(
                                 padding: EdgeInsets.only(
+                                  left: isTablet ? 24 : 16,
+                                  right: isTablet ? 24 : 16,
+                                  bottom: isTablet ? 12 : 8,
+                                ),
+                                child: _buildFashionModelCard(model, isTablet),
+                              );
+                            }).toList(),
+                            SizedBox(height: isTablet ? 24 : 16),
+                          ],
+                          
+                          // Custom Models Section
+                          if (_customModels.isNotEmpty) ...[
+                            // Custom models list
+                            ..._customModels.map((model) {
+                              return Padding(
+                                padding: EdgeInsets.only(
+                                  left: isTablet ? 24 : 16,
+                                  right: isTablet ? 24 : 16,
                                   bottom: isTablet ? 16 : 12,
                                 ),
                                 child: _buildModelCard(model, isTablet),
                               );
-                            },
-                          ),
-                        ),
-                      ],
+                            }).toList(),
+                            SizedBox(height: isTablet ? 24 : 16),
+                          ],
+                        ],
+                      ),
                     ),
+                  );
+                },
+              ),
         ),
       ),
     );
@@ -755,6 +929,59 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
               onPressed: () => _deleteModel(model),
             ),
           ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildFashionModelCard(Map<String, String> model, bool isTablet) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ListTile(
+        contentPadding: EdgeInsets.all(
+          isTablet ? 16 : 12,
+        ),
+        leading: Container(
+          width: isTablet ? 56 : 48,
+          height: isTablet ? 56 : 48,
+          decoration: BoxDecoration(
+            color: Colors.purple.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            Icons.checkroom,
+            color: Colors.purple,
+            size: isTablet ? 32 : 24,
+          ),
+        ),
+        title: Text(
+          model['name']!,
+          style: TextStyle(
+            fontSize: isTablet ? 16 : 14,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        subtitle: Text(
+          model['fileName']!,
+          style: TextStyle(
+            fontSize: isTablet ? 12 : 11,
+            color: Colors.grey[600],
+          ),
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete_outline),
+          color: Colors.red,
+          onPressed: () => _deleteFashionModel(model),
         ),
       ),
     );
