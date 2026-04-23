@@ -57,6 +57,9 @@ dependencies:
   
   # Shared preferences for storing model paths
   shared_preferences: ^2.3.4
+  
+  # Supabase for cloud storage and database
+  supabase_flutter: ^2.9.1
 
 dev_dependencies:
   flutter_test:

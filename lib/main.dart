@@ -5,12 +5,20 @@ import 'screens/tutorial_screen.dart';
 import 'screens/about_screen.dart';
 import 'screens/gallery_screen.dart';
 import 'screens/upload_model_screen.dart';
+import 'screens/image_target_screen.dart';
+import 'config/supabase_config.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Skip fashion data service initialization for now
-  // await FashionDataService().initialize();
+  // Initialize Supabase first
+  try {
+    await SupabaseConfig.initialize();
+    print('✅ Supabase initialized successfully');
+  } catch (e) {
+    print('❌ Error initializing Supabase: $e');
+    print('⚠️ App will continue with limited functionality');
+  }
   
   runApp(const FashionARApp());
 }
@@ -88,6 +96,14 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => const UploadModelScreen(),
+      ),
+    );
+  }
+
+  void _navigateToImageTarget() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const ImageTargetScreen(),
       ),
     );
   }
@@ -364,6 +380,12 @@ class _HomeScreenState extends State<HomeScreen> {
         'title': 'Gallery',
         'description': 'Koleksi lengkap produk fashion',
         'onTap': _navigateToGallery,
+      },
+      {
+        'icon': Icons.image,
+        'title': 'Image Target',
+        'description': 'Upload image target untuk AR detection',
+        'onTap': _navigateToImageTarget,
       },
       {
         'icon': Icons.cloud_upload,

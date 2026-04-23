@@ -233,11 +233,26 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
 
       final file = File(result.files.single.path!);
       final fileName = result.files.single.name;
+      final fileSize = await file.length();
 
-      // Show dialog to enter model name
-      final modelName = await _showNameDialog(fileName);
-      if (modelName == null || modelName.isEmpty) {
+      // Show dialog to enter model details
+      final modelDetails = await _showModelDetailsDialog(fileName);
+      if (modelDetails == null) {
         return;
+      }
+
+      // Ask if user wants to upload image target
+      final uploadImage = await _showImageTargetDialog();
+      File? imageFile;
+      
+      if (uploadImage == true) {
+        final imageResult = await FilePicker.platform.pickFiles(
+          type: FileType.image,
+        );
+        
+        if (imageResult != null && imageResult.files.isNotEmpty) {
+          imageFile = File(imageResult.files.single.path!);
+        }
       }
 
       // Show loading
@@ -245,71 +260,126 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
         showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(),
+          builder: (context) => const AlertDialog(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Uploading to Supabase...'),
+              ],
+            ),
           ),
         );
       }
 
-      // Copy file to app directory
-      final newPath = await _modelService.copyFileToAppDirectory(
-        file,
-        '${DateTime.now().millisecondsSinceEpoch}_$fileName',
-      );
-
-      // Create custom model
-      final customModel = CustomModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        name: modelName,
-        filePath: newPath,
-        uploadedAt: DateTime.now(),
-      );
-
-      // Save to storage
-      await _modelService.saveCustomModel(customModel);
-
-      // Close loading dialog
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-
-      // Reload models
-      await _loadCustomModels();
-
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Model "$modelName" berhasil diupload!'),
-            backgroundColor: Colors.green,
-          ),
+      try {
+        // Upload model to Supabase
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final modelFileName = '${timestamp}_$fileName';
+        final supabaseModelUrl = await _modelService.uploadModelToSupabase(
+          file,
+          modelFileName,
         );
+
+        // Copy to local storage as backup
+        final localPath = await _modelService.copyFileToAppDirectory(
+          file,
+          modelFileName,
+        );
+
+        // Upload image if provided
+        String? supabaseImageUrl;
+        String? localImagePath;
+        
+        if (imageFile != null) {
+          final imageFileName = '${timestamp}_${imageFile.path.split('/').last}';
+          supabaseImageUrl = await _modelService.uploadImageToSupabase(
+            imageFile,
+            imageFileName,
+          );
+          localImagePath = await _modelService.copyFileToAppDirectory(
+            imageFile,
+            imageFileName,
+          );
+        }
+
+        // Create custom model
+        final customModel = CustomModel(
+          id: timestamp.toString(),
+          name: modelDetails['name']!,
+          description: modelDetails['description'],
+          filePath: localPath,
+          imageTargetPath: localImagePath,
+          supabaseModelUrl: supabaseModelUrl,
+          supabaseImageUrl: supabaseImageUrl,
+          uploadedAt: DateTime.now(),
+          fileSize: fileSize,
+        );
+
+        // Save to database
+        await _modelService.saveCustomModel(customModel);
+
+        // Close loading dialog
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+
+        // Reload models
+        await _loadCustomModels();
+
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Model "${modelDetails['name']}" berhasil diupload!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        // Close loading dialog
+        if (mounted) {
+          Navigator.of(context).pop();
+        }
+        _showErrorDialog('Error uploading to Supabase: $e');
       }
     } catch (e) {
-      // Close loading dialog if open
-      if (mounted) {
-        Navigator.of(context).pop();
-      }
-      _showErrorDialog('Error uploading model: $e');
+      _showErrorDialog('Error picking file: $e');
     }
   }
 
-  Future<String?> _showNameDialog(String defaultName) async {
-    final controller = TextEditingController(
+  Future<Map<String, String>?> _showModelDetailsDialog(String defaultName) async {
+    final nameController = TextEditingController(
       text: defaultName.replaceAll(RegExp(r'\.(glb|gltf)$'), ''),
     );
+    final descController = TextEditingController();
 
-    return showDialog<String>(
+    return showDialog<Map<String, String>>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Nama Model'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Masukkan nama model',
-            border: OutlineInputBorder(),
-          ),
-          autofocus: true,
+        title: const Text('Detail Model'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(
+                labelText: 'Nama Model *',
+                border: OutlineInputBorder(),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descController,
+              decoration: const InputDecoration(
+                labelText: 'Deskripsi (opsional)',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 3,
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -317,8 +387,42 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
             child: const Text('Batal'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(controller.text),
-            child: const Text('Simpan'),
+            onPressed: () {
+              if (nameController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Nama model harus diisi')),
+                );
+                return;
+              }
+              Navigator.of(context).pop({
+                'name': nameController.text,
+                'description': descController.text,
+              });
+            },
+            child: const Text('Lanjut'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool?> _showImageTargetDialog() async {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Image Target'),
+        content: const Text(
+          'Apakah Anda ingin menambahkan image target untuk AR?\n\n'
+          'Image target adalah gambar yang akan dideteksi oleh kamera untuk menampilkan model 3D.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Tidak'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Ya, Pilih Gambar'),
           ),
         ],
       ),
@@ -385,21 +489,43 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: Text(model.name),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildInfoRow('ID', model.id),
-            const SizedBox(height: 8),
-            _buildInfoRow('File', model.filePath.split('/').last),
-            const SizedBox(height: 8),
-            _buildInfoRow(
-              'Diupload',
-              '${model.uploadedAt.day}/${model.uploadedAt.month}/${model.uploadedAt.year}',
-            ),
-            const SizedBox(height: 8),
-            _buildInfoRow('Path', model.filePath),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildInfoRow('ID', model.id),
+              const SizedBox(height: 8),
+              _buildInfoRow('File', model.filePath.split('/').last),
+              const SizedBox(height: 8),
+              if (model.description != null && model.description!.isNotEmpty) ...[
+                _buildInfoRow('Deskripsi', model.description!),
+                const SizedBox(height: 8),
+              ],
+              if (model.fileSize != null) ...[
+                _buildInfoRow('Ukuran', '${(model.fileSize! / 1024 / 1024).toStringAsFixed(2)} MB'),
+                const SizedBox(height: 8),
+              ],
+              _buildInfoRow(
+                'Diupload',
+                '${model.uploadedAt.day}/${model.uploadedAt.month}/${model.uploadedAt.year}',
+              ),
+              const SizedBox(height: 8),
+              if (model.supabaseModelUrl != null) ...[
+                _buildInfoRow('Supabase URL', model.supabaseModelUrl!, isUrl: true),
+                const SizedBox(height: 8),
+              ],
+              if (model.imageTargetPath != null) ...[
+                _buildInfoRow('Image Target', 'Ada'),
+                const SizedBox(height: 8),
+              ],
+              if (model.supabaseImageUrl != null) ...[
+                _buildInfoRow('Image URL', model.supabaseImageUrl!, isUrl: true),
+                const SizedBox(height: 8),
+              ],
+              _buildInfoRow('Local Path', model.filePath),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -411,7 +537,7 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String value, {bool isUrl = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
