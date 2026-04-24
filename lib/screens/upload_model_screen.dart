@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/custom_model_service.dart';
 import '../services/data_cache_service.dart';
 import '../config/supabase_config.dart';
@@ -149,28 +150,6 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
 
   Future<void> _uploadSelectedFile(File file, String fileName) async {
     try {
-      final fileSize = await file.length();
-
-      // Show dialog to enter model details
-      final modelDetails = await _showModelDetailsDialog(fileName);
-      if (modelDetails == null) {
-        return;
-      }
-
-      // Ask if user wants to upload image target
-      final uploadImage = await _showImageTargetDialog();
-      File? imageFile;
-      
-      if (uploadImage == true) {
-        final imageResult = await FilePicker.platform.pickFiles(
-          type: FileType.image,
-        );
-        
-        if (imageResult != null && imageResult.files.isNotEmpty) {
-          imageFile = File(imageResult.files.single.path!);
-        }
-      }
-
       // Show loading
       if (mounted) {
         showDialog(
@@ -190,68 +169,33 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
       }
 
       try {
-        // Upload model to Supabase
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final modelFileName = '${timestamp}_$fileName';
-        final supabaseModelUrl = await _modelService.uploadModelToSupabase(
-          file,
-          modelFileName,
-        );
-
-        // Copy to local storage as backup
-        final localPath = await _modelService.copyFileToAppDirectory(
-          file,
-          modelFileName,
-        );
-
-        // Upload image if provided
-        String? supabaseImageUrl;
-        String? localImagePath;
+        // Upload directly to ar-fashion-glb bucket
+        final supabase = SupabaseConfig.client;
+        final bytes = await file.readAsBytes();
         
-        if (imageFile != null) {
-          final imageFileName = '${timestamp}_${imageFile.path.split('/').last}';
-          supabaseImageUrl = await _modelService.uploadImageToSupabase(
-            imageFile,
-            imageFileName,
-          );
-          localImagePath = await _modelService.copyFileToAppDirectory(
-            imageFile,
-            imageFileName,
-          );
-        }
-
-        // Create custom model
-        final customModel = CustomModel(
-          id: timestamp.toString(),
-          name: modelDetails['name']!,
-          description: modelDetails['description'],
-          filePath: localPath,
-          imageTargetPath: localImagePath,
-          supabaseModelUrl: supabaseModelUrl,
-          supabaseImageUrl: supabaseImageUrl,
-          uploadedAt: DateTime.now(),
-          fileSize: fileSize,
-        );
-
-        // Save to database
-        await _modelService.saveCustomModel(customModel);
-        
-        // Tambahkan ke cache agar langsung muncul tanpa perlu reload
-        DataCacheService().addCustomModelToCache(customModel);
+        await supabase.storage
+            .from('ar-fashion-glb')
+            .uploadBinary(
+              fileName,
+              bytes,
+              fileOptions: const FileOptions(
+                upsert: false,
+              ),
+            );
 
         // Close loading dialog
         if (mounted) {
           Navigator.of(context).pop();
         }
 
-        // Reload models dari cache (instant, no loading)
-        await _loadCustomModelsFromCache();
+        // Refresh fashion models list
+        await _loadFashionModels();
 
         // Show success message
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Model "${modelDetails['name']}" berhasil diupload!'),
+              content: Text('Model "$fileName" berhasil diupload!'),
               backgroundColor: Colors.green,
             ),
           );
@@ -266,86 +210,6 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
     } catch (e) {
       _showErrorDialog('Error processing file: $e');
     }
-  }
-
-  Future<Map<String, String>?> _showModelDetailsDialog(String defaultName) async {
-    final nameController = TextEditingController(
-      text: defaultName.replaceAll(RegExp(r'\.(glb|gltf)$'), ''),
-    );
-    final descController = TextEditingController();
-
-    return showDialog<Map<String, String>>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Detail Model'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Nama Model *',
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: descController,
-              decoration: const InputDecoration(
-                labelText: 'Deskripsi (opsional)',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Batal'),
-          ),
-          TextButton(
-            onPressed: () {
-              if (nameController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Nama model harus diisi')),
-                );
-                return;
-              }
-              Navigator.of(context).pop({
-                'name': nameController.text,
-                'description': descController.text,
-              });
-            },
-            child: const Text('Lanjut'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<bool?> _showImageTargetDialog() async {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Image Target'),
-        content: const Text(
-          'Apakah Anda ingin menambahkan image target untuk AR?\n\n'
-          'Image target adalah gambar yang akan dideteksi oleh kamera untuk menampilkan model 3D.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Tidak'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Ya, Pilih Gambar'),
-          ),
-        ],
-      ),
-    );
   }
 
   Future<void> _deleteModel(CustomModel model) async {
@@ -884,32 +748,64 @@ class _UploadDialogContentState extends State<_UploadDialogContent> {
 
   Future<void> _pickFile() async {
     try {
+      debugPrint('🔵 Opening file picker...');
       final result = await FilePicker.platform.pickFiles(
         type: FileType.any,
         allowMultiple: false,
       );
 
       if (result == null || result.files.isEmpty) {
+        debugPrint('❌ File picker cancelled or no file selected');
         return;
       }
 
-      final file = File(result.files.single.path!);
-      final fileName = result.files.single.name;
-
-      // Validasi ekstensi file harus .glb
-      if (!fileName.toLowerCase().endsWith('.glb')) {
+      final filePath = result.files.single.path;
+      if (filePath == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Hanya file GLB yang diperbolehkan'),
+              content: Text('Error: Path file tidak valid'),
               backgroundColor: Colors.red,
             ),
           );
         }
+        debugPrint('❌ File path is null');
+        return;
+      }
+
+      final file = File(filePath);
+      final fileName = result.files.single.name;
+      
+      // Validate file extension
+      if (!fileName.toLowerCase().endsWith('.glb')) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: Hanya file GLB yang diperbolehkan'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        debugPrint('❌ Invalid file extension: $fileName');
+        return;
+      }
+
+      // Validasi file exists
+      if (!await file.exists()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error: File tidak ditemukan'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        debugPrint('❌ File does not exist: $filePath');
         return;
       }
 
       final fileSize = await file.length();
+      debugPrint('✅ File selected: $fileName (${fileSize} bytes)');
 
       setState(() {
         _selectedFile = file;
@@ -917,6 +813,7 @@ class _UploadDialogContentState extends State<_UploadDialogContent> {
         _fileSize = fileSize;
       });
     } catch (e) {
+      debugPrint('❌ Error picking file: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -936,6 +833,8 @@ class _UploadDialogContentState extends State<_UploadDialogContent> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('🔄 _UploadDialogContent build - _selectedFile: ${_selectedFile != null ? "NOT NULL" : "NULL"}');
+    
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -985,7 +884,10 @@ class _UploadDialogContentState extends State<_UploadDialogContent> {
               // File picker button atau preview file
               if (_selectedFile == null)
                 InkWell(
-                  onTap: _pickFile,
+                  onTap: () {
+                    debugPrint('🔵 File picker button tapped');
+                    _pickFile();
+                  },
                   borderRadius: BorderRadius.circular(12),
                   child: Container(
                     padding: EdgeInsets.all(widget.isTablet ? 24 : 20),
@@ -1141,6 +1043,9 @@ class _UploadDialogContentState extends State<_UploadDialogContent> {
                       onPressed: _selectedFile == null
                           ? null
                           : () {
+                              debugPrint('✅ Submit button pressed');
+                              debugPrint('   File: $_selectedFileName');
+                              debugPrint('   Path: ${_selectedFile?.path}');
                               widget.onFileSelected(_selectedFile!, _selectedFileName!);
                             },
                       style: ElevatedButton.styleFrom(
