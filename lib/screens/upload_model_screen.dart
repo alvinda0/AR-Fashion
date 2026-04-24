@@ -125,6 +125,11 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
   }
 
   void _showUploadOptions() {
+    // Tampilkan popup untuk pilih file GLB
+    _showUploadDialog();
+  }
+  
+  Future<void> _showUploadDialog() async {
     final screenSize = MediaQuery.of(context).size;
     final isTablet = screenSize.width > 600;
     
@@ -132,196 +137,18 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: isTablet ? 32 : 20,
-              vertical: isTablet ? 24 : 16,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(height: isTablet ? 16 : 12),
-                Container(
-                  width: isTablet ? 60 : 40,
-                  height: isTablet ? 6 : 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-                SizedBox(height: isTablet ? 28 : 20),
-                Text(
-                  'Upload Model 3D',
-                  style: TextStyle(
-                    fontSize: isTablet ? 24 : 20,
-                    fontWeight: FontWeight.bold,
-                    color: const Color(0xFF333333),
-                  ),
-                ),
-                SizedBox(height: isTablet ? 12 : 8),
-                Text(
-                  'Pilih file model 3D dalam format GLB atau GLTF',
-                  style: TextStyle(
-                    fontSize: isTablet ? 16 : 14,
-                    color: const Color(0xFF666666),
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                SizedBox(height: isTablet ? 32 : 24),
-                _buildUploadOption(
-                  icon: Icons.insert_drive_file,
-                  title: 'GLB File',
-                  subtitle: 'Binary format (Recommended)',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pickAndUploadModel(['glb']);
-                  },
-                  isTablet: isTablet,
-                ),
-                SizedBox(height: isTablet ? 16 : 12),
-                _buildUploadOption(
-                  icon: Icons.code,
-                  title: 'GLTF File',
-                  subtitle: 'JSON format',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pickAndUploadModel(['gltf']);
-                  },
-                  isTablet: isTablet,
-                ),
-                SizedBox(height: isTablet ? 16 : 12),
-                _buildUploadOption(
-                  icon: Icons.folder_open,
-                  title: 'Semua Format',
-                  subtitle: 'GLB atau GLTF',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _pickAndUploadModel(['glb', 'gltf']);
-                  },
-                  isTablet: isTablet,
-                ),
-                SizedBox(height: isTablet ? 28 : 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    style: TextButton.styleFrom(
-                      minimumSize: Size(double.infinity, isTablet ? 56 : 48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: Text(
-                      'Batal',
-                      style: TextStyle(
-                        fontSize: isTablet ? 16 : 14,
-                      ),
-                    ),
-                  ),
-                ),
-                SizedBox(height: isTablet ? 16 : 12),
-              ],
-            ),
-          ),
-        ),
+      builder: (context) => _UploadDialogContent(
+        isTablet: isTablet,
+        onFileSelected: (file, fileName) async {
+          Navigator.pop(context);
+          await _uploadSelectedFile(file, fileName);
+        },
       ),
     );
   }
 
-  Widget _buildUploadOption({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    required bool isTablet,
-  }) {
-    final iconSize = isTablet ? 56.0 : 48.0;
-    final titleSize = isTablet ? 18.0 : 16.0;
-    final subtitleSize = isTablet ? 14.0 : 12.0;
-    final arrowSize = isTablet ? 20.0 : 16.0;
-    
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: EdgeInsets.all(isTablet ? 20 : 16),
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey[300]!),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: iconSize,
-              height: iconSize,
-              decoration: BoxDecoration(
-                color: const Color(0xFF00796B).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icon,
-                color: const Color(0xFF00796B),
-                size: iconSize * 0.5,
-              ),
-            ),
-            SizedBox(width: isTablet ? 20 : 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: titleSize,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF333333),
-                    ),
-                  ),
-                  SizedBox(height: isTablet ? 6 : 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: subtitleSize,
-                      color: const Color(0xFF666666),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: arrowSize,
-              color: const Color(0xFF666666),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _pickAndUploadModel(List<String> extensions) async {
+  Future<void> _uploadSelectedFile(File file, String fileName) async {
     try {
-      // Pick GLB/GLTF file
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: extensions,
-      );
-
-      if (result == null || result.files.isEmpty) {
-        return;
-      }
-
-      final file = File(result.files.single.path!);
-      final fileName = result.files.single.name;
       final fileSize = await file.length();
 
       // Show dialog to enter model details
@@ -437,7 +264,7 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
         _showErrorDialog('Error uploading to Supabase: $e');
       }
     } catch (e) {
-      _showErrorDialog('Error picking file: $e');
+      _showErrorDialog('Error processing file: $e');
     }
   }
 
@@ -1030,6 +857,316 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
           icon: const Icon(Icons.delete_outline),
           color: Colors.red,
           onPressed: () => _deleteFashionModel(model),
+        ),
+      ),
+    );
+  }
+}
+
+// Widget untuk dialog upload dengan preview file
+class _UploadDialogContent extends StatefulWidget {
+  final bool isTablet;
+  final Function(File file, String fileName) onFileSelected;
+
+  const _UploadDialogContent({
+    required this.isTablet,
+    required this.onFileSelected,
+  });
+
+  @override
+  State<_UploadDialogContent> createState() => _UploadDialogContentState();
+}
+
+class _UploadDialogContentState extends State<_UploadDialogContent> {
+  File? _selectedFile;
+  String? _selectedFileName;
+  int? _fileSize;
+
+  Future<void> _pickFile() async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        allowMultiple: false,
+      );
+
+      if (result == null || result.files.isEmpty) {
+        return;
+      }
+
+      final file = File(result.files.single.path!);
+      final fileName = result.files.single.name;
+
+      // Validasi ekstensi file harus .glb
+      if (!fileName.toLowerCase().endsWith('.glb')) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Hanya file GLB yang diperbolehkan'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+
+      final fileSize = await file.length();
+
+      setState(() {
+        _selectedFile = file;
+        _selectedFileName = fileName;
+        _fileSize = fileSize;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error memilih file: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  String _formatFileSize(int bytes) {
+    if (bytes < 1024) return '$bytes B';
+    if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(2)} KB';
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(2)} MB';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: widget.isTablet ? 32 : 20,
+            vertical: widget.isTablet ? 24 : 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: widget.isTablet ? 16 : 12),
+              Container(
+                width: widget.isTablet ? 60 : 40,
+                height: widget.isTablet ? 6 : 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              SizedBox(height: widget.isTablet ? 28 : 20),
+              Text(
+                'Upload Model 3D',
+                style: TextStyle(
+                  fontSize: widget.isTablet ? 24 : 20,
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF333333),
+                ),
+              ),
+              SizedBox(height: widget.isTablet ? 12 : 8),
+              Text(
+                'Pilih file model 3D dalam format GLB',
+                style: TextStyle(
+                  fontSize: widget.isTablet ? 16 : 14,
+                  color: const Color(0xFF666666),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: widget.isTablet ? 32 : 24),
+              
+              // File picker button atau preview file
+              if (_selectedFile == null)
+                InkWell(
+                  onTap: _pickFile,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: EdgeInsets.all(widget.isTablet ? 24 : 20),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: const Color(0xFF00796B),
+                        width: 2,
+                        style: BorderStyle.solid,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      color: const Color(0xFF00796B).withValues(alpha: 0.05),
+                    ),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.cloud_upload_outlined,
+                          size: widget.isTablet ? 64 : 48,
+                          color: const Color(0xFF00796B),
+                        ),
+                        SizedBox(height: widget.isTablet ? 16 : 12),
+                        Text(
+                          'Pilih File GLB',
+                          style: TextStyle(
+                            fontSize: widget.isTablet ? 18 : 16,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFF00796B),
+                          ),
+                        ),
+                        SizedBox(height: widget.isTablet ? 8 : 6),
+                        Text(
+                          'Tap untuk memilih file dari perangkat',
+                          style: TextStyle(
+                            fontSize: widget.isTablet ? 14 : 12,
+                            color: const Color(0xFF666666),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  padding: EdgeInsets.all(widget.isTablet ? 20 : 16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[300]!),
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.grey[50],
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: widget.isTablet ? 56 : 48,
+                            height: widget.isTablet ? 56 : 48,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF00796B).withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.insert_drive_file,
+                              color: const Color(0xFF00796B),
+                              size: widget.isTablet ? 32 : 24,
+                            ),
+                          ),
+                          SizedBox(width: widget.isTablet ? 16 : 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _selectedFileName!,
+                                  style: TextStyle(
+                                    fontSize: widget.isTablet ? 16 : 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF333333),
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                SizedBox(height: widget.isTablet ? 6 : 4),
+                                Text(
+                                  _formatFileSize(_fileSize!),
+                                  style: TextStyle(
+                                    fontSize: widget.isTablet ? 14 : 12,
+                                    color: const Color(0xFF666666),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            color: Colors.red,
+                            onPressed: () {
+                              setState(() {
+                                _selectedFile = null;
+                                _selectedFileName = null;
+                                _fileSize = null;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: widget.isTablet ? 16 : 12),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle,
+                            color: Colors.green,
+                            size: widget.isTablet ? 20 : 16,
+                          ),
+                          SizedBox(width: widget.isTablet ? 8 : 6),
+                          Text(
+                            'File siap diupload',
+                            style: TextStyle(
+                              fontSize: widget.isTablet ? 14 : 12,
+                              color: Colors.green,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              
+              SizedBox(height: widget.isTablet ? 28 : 20),
+              
+              // Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        minimumSize: Size(double.infinity, widget.isTablet ? 56 : 48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Batal',
+                        style: TextStyle(
+                          fontSize: widget.isTablet ? 16 : 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: widget.isTablet ? 16 : 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _selectedFile == null
+                          ? null
+                          : () {
+                              widget.onFileSelected(_selectedFile!, _selectedFileName!);
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF00796B),
+                        foregroundColor: Colors.white,
+                        minimumSize: Size(double.infinity, widget.isTablet ? 56 : 48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        disabledBackgroundColor: Colors.grey[300],
+                        disabledForegroundColor: Colors.grey[500],
+                      ),
+                      child: Text(
+                        'Submit',
+                        style: TextStyle(
+                          fontSize: widget.isTablet ? 16 : 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: widget.isTablet ? 16 : 12),
+            ],
+          ),
         ),
       ),
     );
