@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/image_target_service.dart';
+import '../services/data_cache_service.dart';
 import '../config/supabase_config.dart';
 
 class ImageTargetScreen extends StatefulWidget {
@@ -24,8 +25,8 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
   @override
   void initState() {
     super.initState();
-    _loadImageTargets();
-    _loadAvailableModels();
+    _loadImageTargetsFromCache();
+    _loadAvailableModelsFromCache();
   }
 
   @override
@@ -34,8 +35,61 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
     _descriptionController.dispose();
     super.dispose();
   }
+  
+  Future<void> _refreshData() async {
+    debugPrint('🔄 Refreshing data from Supabase...');
+    
+    try {
+      // Refresh cache dari Supabase
+      await DataCacheService().refreshData();
+      
+      // Update UI dengan data terbaru dari cache
+      setState(() {
+        _imageTargets = DataCacheService().imageTargets;
+        _availableModels = DataCacheService().models;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data berhasil diperbarui'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      
+      debugPrint('✅ Data refreshed successfully');
+    } catch (e) {
+      debugPrint('❌ Error refreshing data: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memperbarui data: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
 
-  Future<void> _loadImageTargets() async {
+  Future<void> _loadImageTargetsFromCache() async {
+    // Gunakan data dari cache yang sudah di-fetch saat app start
+    final cacheService = DataCacheService();
+    
+    if (cacheService.hasCachedData) {
+      // Data sudah ada di cache, langsung gunakan tanpa loading
+      setState(() {
+        _imageTargets = cacheService.imageTargets;
+        _isLoading = false;
+      });
+      debugPrint('✅ Loaded ${_imageTargets.length} image targets from cache (instant!)');
+      return;
+    }
+    
+    // Fallback: jika cache kosong, fetch dari Supabase
     setState(() => _isLoading = true);
     try {
       if (!SupabaseConfig.isInitialized) {
@@ -55,13 +109,28 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
         _imageTargets = targets;
         _isLoading = false;
       });
+      debugPrint('✅ Loaded ${_imageTargets.length} image targets from Supabase');
     } catch (e) {
       setState(() => _isLoading = false);
       _showErrorDialog('Error loading image targets:\n$e');
     }
   }
   
-  Future<void> _loadAvailableModels() async {
+  Future<void> _loadAvailableModelsFromCache() async {
+    // Gunakan data dari cache yang sudah di-fetch saat app start
+    final cacheService = DataCacheService();
+    
+    if (cacheService.models.isNotEmpty) {
+      // Data sudah ada di cache, langsung gunakan tanpa loading
+      setState(() {
+        _availableModels = cacheService.models;
+        _isLoadingModels = false;
+      });
+      debugPrint('✅ Loaded ${_availableModels.length} models from cache (instant!)');
+      return;
+    }
+    
+    // Fallback: jika cache kosong, fetch dari Supabase
     setState(() => _isLoadingModels = true);
     try {
       if (!SupabaseConfig.isInitialized) {
@@ -218,7 +287,7 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
                               ),
                             )
                           : DropdownButtonFormField<String>(
-                              value: _selectedModelUrl,
+                              initialValue: _selectedModelUrl,
                               decoration: InputDecoration(
                                 labelText: 'Pilih Model 3D',
                                 border: InputBorder.none,
@@ -401,6 +470,9 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
 
         // Save to database
         await _service.saveImageTarget(imageTarget);
+        
+        // Tambahkan ke cache agar langsung muncul tanpa perlu reload
+        DataCacheService().addImageTargetToCache(imageTarget);
 
         // Close loading dialog
         if (mounted) {
@@ -412,8 +484,8 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
         _descriptionController.clear();
         _selectedModelUrl = null;
 
-        // Reload list
-        await _loadImageTargets();
+        // Reload list dari cache (instant, no loading)
+        await _loadImageTargetsFromCache();
 
         // Show success message
         if (mounted) {
@@ -463,7 +535,11 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
     if (confirm == true && target.id != null) {
       try {
         await _service.deleteImageTarget(target.id!, target.imageTarget);
-        await _loadImageTargets();
+        
+        // Hapus dari cache agar langsung hilang tanpa perlu reload
+        DataCacheService().removeImageTargetFromCache(target.id!);
+        
+        await _loadImageTargetsFromCache();
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -501,6 +577,7 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
     final isTablet = screenSize.width > 600;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF00796B), // Set background color untuk Scaffold
       appBar: AppBar(
         title: const Text('Image Target'),
         backgroundColor: const Color(0xFF00796B),
@@ -525,6 +602,8 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
         ],
       ),
       body: Container(
+        width: double.infinity, // Pastikan container full width
+        height: double.infinity, // Pastikan container full height
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -543,33 +622,39 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
                   ),
                 )
               : _imageTargets.isEmpty
-                  ? _buildEmptyState(isTablet)
-                  : Column(
-                      children: [
-                        // Info banner
-                        // Image targets grid
-                        Expanded(
-                          child: GridView.builder(
-                            padding: EdgeInsets.only(
-                              left: isTablet ? 24 : 16,
-                              right: isTablet ? 24 : 16,
-                              top: isTablet ? 24 : 16,
-                              bottom: isTablet ? 24 : 16,
-                            ),
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: isTablet ? 3 : 2,
-                              crossAxisSpacing: isTablet ? 16 : 12,
-                              mainAxisSpacing: isTablet ? 16 : 12,
-                              childAspectRatio: 0.8,
-                            ),
-                            itemCount: _imageTargets.length,
-                            itemBuilder: (context, index) {
-                              final target = _imageTargets[index];
-                              return _buildImageCard(target, isTablet);
-                            },
-                          ),
+                  ? RefreshIndicator(
+                      onRefresh: _refreshData,
+                      color: const Color(0xFF00796B),
+                      child: SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: SizedBox(
+                          height: MediaQuery.of(context).size.height - 200,
+                          child: _buildEmptyState(isTablet),
                         ),
-                      ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _refreshData,
+                      color: const Color(0xFF00796B),
+                      child: GridView.builder(
+                        padding: EdgeInsets.only(
+                          left: isTablet ? 24 : 16,
+                          right: isTablet ? 24 : 16,
+                          top: isTablet ? 24 : 16,
+                          bottom: isTablet ? 24 : 16,
+                        ),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2, // Ubah dari 3 menjadi 2 kolom untuk semua ukuran layar
+                          crossAxisSpacing: isTablet ? 16 : 12,
+                          mainAxisSpacing: isTablet ? 16 : 12,
+                          childAspectRatio: 0.8,
+                        ),
+                        itemCount: _imageTargets.length,
+                        itemBuilder: (context, index) {
+                          final target = _imageTargets[index];
+                          return _buildImageCard(target, isTablet);
+                        },
+                      ),
                     ),
         ),
       ),
@@ -673,28 +758,6 @@ class _ImageTargetScreenState extends State<ImageTargetScreen> {
                         ),
                     ],
                   ),
-                  if (target.description != null && target.description!.isNotEmpty) ...[
-                    SizedBox(height: isTablet ? 4 : 2),
-                    Text(
-                      target.description!,
-                      style: TextStyle(
-                        fontSize: isTablet ? 11 : 10,
-                        color: Colors.grey[600],
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                  if (target.createdAt != null) ...[
-                    SizedBox(height: isTablet ? 4 : 2),
-                    Text(
-                      '${target.createdAt!.day}/${target.createdAt!.month}/${target.createdAt!.year}',
-                      style: TextStyle(
-                        fontSize: isTablet ? 12 : 10,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),

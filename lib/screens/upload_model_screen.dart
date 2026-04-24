@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import '../services/custom_model_service.dart';
+import '../services/data_cache_service.dart';
 import '../config/supabase_config.dart';
 
 class UploadModelScreen extends StatefulWidget {
@@ -21,8 +22,44 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
   @override
   void initState() {
     super.initState();
-    _loadCustomModels();
-    _loadFashionModels();
+    _loadCustomModelsFromCache();
+    _loadFashionModelsFromCache();
+  }
+
+  Future<void> _loadCustomModelsFromCache() async {
+    // Gunakan data dari cache yang sudah di-fetch saat app start
+    final cacheService = DataCacheService();
+    
+    if (cacheService.hasCustomModels) {
+      // Data sudah ada di cache, langsung gunakan tanpa loading
+      setState(() {
+        _customModels = cacheService.customModels;
+        _isLoading = false;
+      });
+      debugPrint('✅ Upload Model: Loaded ${_customModels.length} custom models from cache (instant!)');
+      return;
+    }
+    
+    // Fallback: jika cache kosong, fetch dari Supabase
+    await _loadCustomModels();
+  }
+  
+  Future<void> _loadFashionModelsFromCache() async {
+    // Gunakan data dari cache yang sudah di-fetch saat app start
+    final cacheService = DataCacheService();
+    
+    if (cacheService.hasFashionModels) {
+      // Data sudah ada di cache, langsung gunakan tanpa loading
+      setState(() {
+        _fashionModels = cacheService.fashionModels;
+        _isLoadingFashionModels = false;
+      });
+      debugPrint('✅ Upload Model: Loaded ${_fashionModels.length} fashion models from cache (instant!)');
+      return;
+    }
+    
+    // Fallback: jika cache kosong, fetch dari Supabase
+    await _loadFashionModels();
   }
 
   Future<void> _loadCustomModels() async {
@@ -33,6 +70,7 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
         _customModels = models;
         _isLoading = false;
       });
+      debugPrint('✅ Upload Model: Loaded ${_customModels.length} custom models from Supabase');
     } catch (e) {
       setState(() => _isLoading = false);
       _showErrorDialog('Error loading models: $e');
@@ -370,14 +408,17 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
 
         // Save to database
         await _modelService.saveCustomModel(customModel);
+        
+        // Tambahkan ke cache agar langsung muncul tanpa perlu reload
+        DataCacheService().addCustomModelToCache(customModel);
 
         // Close loading dialog
         if (mounted) {
           Navigator.of(context).pop();
         }
 
-        // Reload models
-        await _loadCustomModels();
+        // Reload models dari cache (instant, no loading)
+        await _loadCustomModelsFromCache();
 
         // Show success message
         if (mounted) {
@@ -503,7 +544,11 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
     if (confirm == true) {
       try {
         await _modelService.deleteCustomModel(model.id);
-        await _loadCustomModels();
+        
+        // Hapus dari cache agar langsung hilang tanpa perlu reload
+        DataCacheService().removeCustomModelFromCache(model.id);
+        
+        await _loadCustomModelsFromCache();
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -605,8 +650,11 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
           Navigator.of(context).pop();
         }
         
-        // Reload fashion models
-        await _loadFashionModels();
+        // Hapus dari cache agar langsung hilang tanpa perlu reload
+        DataCacheService().removeFashionModelFromCache(model['fileName']!);
+        
+        // Reload fashion models dari cache (instant, no loading)
+        await _loadFashionModelsFromCache();
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -810,7 +858,7 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
                                 ),
                                 child: _buildFashionModelCard(model, isTablet),
                               );
-                            }).toList(),
+                            }),
                             SizedBox(height: isTablet ? 24 : 16),
                           ],
                           
@@ -826,7 +874,7 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
                                 ),
                                 child: _buildModelCard(model, isTablet),
                               );
-                            }).toList(),
+                            }),
                             SizedBox(height: isTablet ? 24 : 16),
                           ],
                         ],

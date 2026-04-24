@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/image_target_service.dart';
+import '../services/data_cache_service.dart';
 import '../config/supabase_config.dart';
 
 class GalleryScreen extends StatefulWidget {
@@ -18,7 +19,26 @@ class _GalleryScreenState extends State<GalleryScreen> {
   @override
   void initState() {
     super.initState();
-    _loadImageTargets();
+    _loadImageTargetsFromCache();
+  }
+
+  Future<void> _loadImageTargetsFromCache() async {
+    // Gunakan data dari cache yang sudah di-fetch saat app start
+    final cacheService = DataCacheService();
+    
+    if (cacheService.hasCachedData) {
+      // Data sudah ada di cache, langsung gunakan tanpa loading
+      setState(() {
+        _imageTargets = cacheService.imageTargets;
+        _isLoading = false;
+        _errorMessage = null;
+      });
+      debugPrint('✅ Gallery: Loaded ${_imageTargets.length} items from cache (instant!)');
+      return;
+    }
+    
+    // Fallback: jika cache kosong, fetch dari Supabase
+    await _loadImageTargets();
   }
 
   Future<void> _loadImageTargets() async {
@@ -45,11 +65,51 @@ class _GalleryScreenState extends State<GalleryScreen> {
         _imageTargets = targets;
         _isLoading = false;
       });
+      debugPrint('✅ Gallery: Loaded ${_imageTargets.length} items from Supabase');
     } catch (e) {
       setState(() {
         _isLoading = false;
         _errorMessage = 'Error loading koleksi:\n$e';
       });
+    }
+  }
+  
+  Future<void> _refreshData() async {
+    debugPrint('🔄 Gallery: Refreshing data...');
+    
+    try {
+      // Refresh cache dari Supabase
+      await DataCacheService().refreshData();
+      
+      // Update UI dengan data terbaru dari cache
+      setState(() {
+        _imageTargets = DataCacheService().imageTargets;
+        _errorMessage = null;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Data berhasil diperbarui'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      
+      debugPrint('✅ Gallery: Data refreshed successfully');
+    } catch (e) {
+      debugPrint('❌ Gallery: Error refreshing data: $e');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gagal memperbarui data: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -61,19 +121,15 @@ class _GalleryScreenState extends State<GalleryScreen> {
     final isTablet = screenSize.width > 600;
 
     return Scaffold(
+      backgroundColor: const Color(0xFF00796B), // Set background color untuk Scaffold
       appBar: AppBar(
         title: const Text('Gallery Koleksi'),
         backgroundColor: const Color(0xFF00796B),
         foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadImageTargets,
-            tooltip: 'Refresh',
-          ),
-        ],
       ),
       body: Container(
+        width: double.infinity, // Pastikan container full width
+        height: double.infinity, // Pastikan container full height
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -93,20 +149,34 @@ class _GalleryScreenState extends State<GalleryScreen> {
             : _errorMessage != null
                 ? _buildErrorState(isTablet)
                 : _imageTargets.isEmpty
-                    ? _buildEmptyState(isTablet)
-                    : GridView.builder(
-                        padding: EdgeInsets.all(isTablet ? 24 : 16),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: isTablet ? 3 : 2,
-                          crossAxisSpacing: isTablet ? 16 : 12,
-                          mainAxisSpacing: isTablet ? 16 : 12,
-                          childAspectRatio: 0.75,
+                    ? RefreshIndicator(
+                        onRefresh: _refreshData,
+                        color: const Color(0xFF00796B),
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          child: SizedBox(
+                            height: MediaQuery.of(context).size.height - 200,
+                            child: _buildEmptyState(isTablet),
+                          ),
                         ),
-                        itemCount: _imageTargets.length,
-                        itemBuilder: (context, index) {
-                          final item = _imageTargets[index];
-                          return _buildGalleryItem(context, item, isTablet);
-                        },
+                      )
+                    : RefreshIndicator(
+                        onRefresh: _refreshData,
+                        color: const Color(0xFF00796B),
+                        child: GridView.builder(
+                          padding: EdgeInsets.all(isTablet ? 24 : 16),
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2, // Ubah dari 3 menjadi 2 kolom untuk semua ukuran layar
+                            crossAxisSpacing: isTablet ? 16 : 12,
+                            mainAxisSpacing: isTablet ? 16 : 12,
+                            childAspectRatio: 0.75,
+                          ),
+                          itemCount: _imageTargets.length,
+                          itemBuilder: (context, index) {
+                            final item = _imageTargets[index];
+                            return _buildGalleryItem(context, item, isTablet);
+                          },
+                        ),
                       ),
       ),
     );

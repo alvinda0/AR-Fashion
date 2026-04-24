@@ -7,6 +7,7 @@ import 'screens/gallery_screen.dart';
 import 'screens/upload_model_screen.dart';
 import 'screens/image_target_screen.dart';
 import 'config/supabase_config.dart';
+import 'services/data_cache_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,6 +16,11 @@ void main() async {
   try {
     await SupabaseConfig.initialize();
     print('✅ Supabase initialized successfully');
+    
+    // Pre-fetch data dari Supabase untuk menghindari loading di screen
+    print('🔄 Pre-fetching data from Supabase...');
+    await DataCacheService().preFetchData();
+    print('✅ Data pre-fetch completed');
   } catch (e) {
     print('❌ Error initializing Supabase: $e');
     print('⚠️ App will continue with limited functionality');

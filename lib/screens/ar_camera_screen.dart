@@ -3,8 +3,8 @@ import 'package:camera/camera.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'dart:async';
-import 'package:flutter/services.dart';
 import '../services/image_target_service.dart';
+import '../services/data_cache_service.dart';
 import '../config/supabase_config.dart';
 
 class ARCameraScreen extends StatefulWidget {
@@ -315,29 +315,47 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
   @override
   void initState() {
     super.initState();
-    _loadImageTargetsFromSupabase();
+    _loadImageTargetsFromCache();
     _initializeCamera();
   }
   
-  Future<void> _loadImageTargetsFromSupabase() async {
+  Future<void> _loadImageTargetsFromCache() async {
     try {
-      if (!SupabaseConfig.isInitialized) {
-        debugPrint('⚠️ Supabase not initialized, using fallback data');
-        setState(() => _isLoading = false);
-        return;
-      }
+      // Gunakan data dari cache yang sudah di-fetch saat app start
+      final cacheService = DataCacheService();
       
-      final targets = await _imageTargetService.getImageTargets();
-      setState(() {
-        _imageTargets = targets;
-      });
-      
-      debugPrint('✅ Loaded ${_imageTargets.length} image targets from Supabase');
-      for (var target in _imageTargets) {
-        debugPrint('  - ${target.name}: ${target.imageTarget}');
+      if (cacheService.hasCachedData) {
+        // Data sudah ada di cache, langsung gunakan
+        setState(() {
+          _imageTargets = cacheService.imageTargets;
+          _isLoading = false;
+        });
+        
+        debugPrint('✅ Loaded ${_imageTargets.length} image targets from cache (no loading!)');
+        for (var target in _imageTargets) {
+          debugPrint('  - ${target.name}: ${target.imageTarget}');
+        }
+      } else {
+        // Fallback: jika cache kosong, fetch dari Supabase
+        debugPrint('⚠️ Cache empty, fetching from Supabase...');
+        
+        if (!SupabaseConfig.isInitialized) {
+          debugPrint('⚠️ Supabase not initialized, using fallback data');
+          setState(() => _isLoading = false);
+          return;
+        }
+        
+        final targets = await _imageTargetService.getImageTargets();
+        setState(() {
+          _imageTargets = targets;
+          _isLoading = false;
+        });
+        
+        debugPrint('✅ Loaded ${_imageTargets.length} image targets from Supabase');
       }
     } catch (e) {
       debugPrint('❌ Error loading image targets: $e');
+      setState(() => _isLoading = false);
     }
   }
   
