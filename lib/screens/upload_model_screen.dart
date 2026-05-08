@@ -46,11 +46,9 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
   }
   
   Future<void> _loadFashionModelsFromCache() async {
-    // Gunakan data dari cache yang sudah di-fetch saat app start
     final cacheService = DataCacheService();
     
     if (cacheService.hasFashionModels) {
-      // Data sudah ada di cache, langsung gunakan tanpa loading
       setState(() {
         _fashionModels = cacheService.fashionModels;
         _isLoadingFashionModels = false;
@@ -59,7 +57,6 @@ class _UploadModelScreenState extends State<UploadModelScreen> {
       return;
     }
     
-    // Fallback: jika cache kosong, fetch dari Supabase
     await _loadFashionModels();
   }
 
