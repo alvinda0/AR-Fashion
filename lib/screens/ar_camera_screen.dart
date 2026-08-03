@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:model_viewer_plus/model_viewer_plus.dart';
 import 'package:google_ml_kit/google_ml_kit.dart';
 import 'dart:async';
+import 'dart:io';
 import '../services/image_target_service.dart';
 import '../services/data_cache_service.dart';
 import '../config/supabase_config.dart';
@@ -24,12 +25,11 @@ class _ARCameraScreenState extends State<ARCameraScreen> {
   bool _isModelLoaded = false;
   double _modelLoadProgress = 0.0;
   
-  // Image recognition
-  final ImageLabeler _imageLabeler = ImageLabeler(options: ImageLabelerOptions());
+  // Image recognition — hanya TextRecognizer, tanpa ImageLabeler
   final TextRecognizer _textRecognizer = TextRecognizer();
-  Timer? _recognitionTimer;
   bool _isProcessingImage = false;
   String _lastDetectedLabel = '';
+  Timer? _scanTimer;
   
   // Image Target Service
   final ImageTargetService _imageTargetService = ImageTargetService();
@@ -404,8 +404,7 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
 
   @override
   void dispose() {
-    _recognitionTimer?.cancel();
-    _imageLabeler.close();
+    _scanTimer?.cancel();
     _textRecognizer.close();
     _cameraController?.dispose();
     super.dispose();
@@ -427,11 +426,14 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
         
         _cameraController = CameraController(
           selectedCamera,
-          ResolutionPreset.medium,
+          ResolutionPreset.medium, // medium: preview cukup jernih, takePicture cepat
           enableAudio: false,
         );
         
         await _cameraController!.initialize();
+        
+        // Ensure flash is always off when initializing camera
+        await _cameraController!.setFlashMode(FlashMode.off);
         
         if (mounted) {
           setState(() {
@@ -458,133 +460,150 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
       _isFrontCamera = !_isFrontCamera;
       _isCameraInitialized = false;
     });
-    
-    _recognitionTimer?.cancel();
+
+    _scanTimer?.cancel();
     await _cameraController?.dispose();
-    
+
     await _initializeCamera();
   }
-  
+
   void _startImageRecognition() {
-    _recognitionTimer = Timer.periodic(const Duration(milliseconds: 1000), (timer) {
-      // Pause scanning when model is loading or being displayed
-      if (!_isProcessingImage && 
-          !_isLoadingModel &&
+    _scanTimer?.cancel();
+    // Scan tiap 1.5 detik — cukup responsif tanpa overload
+    _scanTimer = Timer.periodic(const Duration(milliseconds: 1500), (_) {
+      if (!_isProcessingImage &&
           !_isModelLoaded &&
-          _cameraController != null && 
-          _cameraController!.value.isInitialized) {
-        _processCurrentFrame();
+          !_isLoadingModel &&
+          _cameraController != null &&
+          _cameraController!.value.isInitialized &&
+          !(_cameraController!.value.isTakingPicture)) {
+        _runOcr();
       }
     });
   }
-  
-  Future<void> _processCurrentFrame() async {
-    if (_isProcessingImage) return;
-    
+
+  void _stopImageRecognition() {
+    _scanTimer?.cancel();
+    _scanTimer = null;
+  }
+
+  Future<void> _runOcr() async {
     _isProcessingImage = true;
-    
     try {
-      final image = await _cameraController!.takePicture();
-      final inputImage = InputImage.fromFilePath(image.path);
-      
-      // Try text recognition first (for reading product names on posters)
-      final recognizedText = await _textRecognizer.processImage(inputImage);
-      String detectedText = recognizedText.text.toLowerCase();
-      
-      debugPrint('=== Text Detected ===');
-      debugPrint(detectedText);
-      
-      // Check if any product name is in the detected text
-      String? matchedFromText = _findMatchingItemFromText(detectedText);
-      if (matchedFromText != null && _selectedItemId != matchedFromText) {
-        debugPrint('✓✓✓ MATCHED FROM TEXT: $matchedFromText');
-        
+      // Ambil foto ke file temp — paling reliable di semua Android/iOS
+      final xFile = await _cameraController!.takePicture();
+      final inputImage = InputImage.fromFilePath(xFile.path);
+
+      final result = await _textRecognizer.processImage(inputImage);
+      final text = result.text;
+
+      // Hapus file temp
+      try { File(xFile.path).deleteSync(); } catch (_) {}
+
+      if (text.trim().isEmpty) {
+        debugPrint('OCR: no text found');
+        return;
+      }
+
+      debugPrint('OCR raw text:\n$text');
+
+      // Update label UI
+      if (mounted) {
+        setState(() => _lastDetectedLabel = text.split('\n').first.trim());
+      }
+
+      final matched = _findMatchingItemFromText(text);
+      if (matched != null && matched != _selectedItemId && mounted) {
+        debugPrint('✓ MATCHED: $matched');
+        _stopImageRecognition();
         setState(() {
-          _selectedItemId = matchedFromText;
+          _selectedItemId = matched;
           _isLoadingModel = true;
           _isModelLoaded = false;
           _modelLoadProgress = 0.0;
-          _lastDetectedLabel = 'Text: ${matchedFromText.toUpperCase()}';
+          _lastDetectedLabel = matched.toUpperCase();
         });
-        
-        // Simulate loading progress
         _simulateLoadingProgress();
-        _isProcessingImage = false;
-        return;
-      }
-      
-      // Don't process labels if already loading or model is displayed
-      if (_isLoadingModel || _isModelLoaded) {
-        _isProcessingImage = false;
-        return;
-      }
-      
-      // If no text match, try image labeling
-      final labels = await _imageLabeler.processImage(inputImage);
-      
-      debugPrint('=== Image Labels Detected ===');
-      for (var label in labels) {
-        debugPrint('Label: ${label.label}, Confidence: ${label.confidence}');
-      }
-      
-      // Update UI with last detected label
-      if (mounted && labels.isNotEmpty) {
-        setState(() {
-          _lastDetectedLabel = labels.first.label;
-        });
-      }
-      
-      // Match based on labels with lower threshold
-      for (var label in labels) {
-        if (label.confidence > 0.2) { // Even lower threshold for better detection
-          final matchedItem = _findMatchingItem(label.label);
-          if (matchedItem != null && _selectedItemId != matchedItem) {
-            debugPrint('✓✓✓ MATCHED FROM LABEL: $matchedItem for label: ${label.label} (confidence: ${label.confidence})');
-            setState(() {
-              _selectedItemId = matchedItem;
-              _isLoadingModel = true;
-              _isModelLoaded = false;
-              _modelLoadProgress = 0.0;
-            });
-            
-            _simulateLoadingProgress();
-            break;
-          }
-        }
       }
     } catch (e) {
-      debugPrint('Error processing frame: $e');
+      debugPrint('OCR error: $e');
     } finally {
       _isProcessingImage = false;
     }
   }
   
   String? _findMatchingItemFromText(String text) {
+    // Preserve original casing for display, use lowercase for matching
     final lowerText = text.toLowerCase();
     
     debugPrint('Searching for product names in text: $lowerText');
     
-    // Remove special characters and extra spaces for better matching
-    final cleanText = lowerText.replaceAll(RegExp(r'[^\w\s]'), ' ').replaceAll(RegExp(r'\s+'), ' ');
+    // Hapus karakter khusus, normalisasi spasi — tapi pertahankan huruf & angka
+    final cleanText = lowerText
+        .replaceAll(RegExp(r'[^\w\s]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
     debugPrint('Cleaned text: $cleanText');
     
-    // Check against image targets from Supabase
+    // Gabungkan semua sumber: image targets dari Supabase + fallback fashion items
+    final List<Map<String, String>> allSources = [];
+    
+    // Dari Supabase image targets
     for (var target in _imageTargets) {
-      final targetName = target.name.toLowerCase();
-      
-      // Check if target name is in the text
-      if (cleanText.contains(targetName)) {
-        debugPrint('✓ Found ${target.name} in text');
-        return target.name;
+      allSources.add({'id': target.name, 'name': target.name});
+    }
+    
+    // Dari fallback fashion items (jika image targets kosong)
+    if (_imageTargets.isEmpty) {
+      for (var item in _fashionItems) {
+        allSources.add({'id': item['id'] ?? '', 'name': item['name'] ?? ''});
       }
+    }
+    
+    // 1. Exact match — nama produk ditemukan utuh dalam teks (case-insensitive)
+    for (var source in allSources) {
+      final productName = source['name']!.toLowerCase().trim();
+      if (productName.isNotEmpty && cleanText.contains(productName)) {
+        debugPrint('✓ Exact match: ${source['name']} found in text');
+        return source['id'];
+      }
+    }
+    
+    // 2. Word-level match — setiap token dari nama produk (min 4 huruf)
+    //    Gunakan word boundary agar tidak false positive dari substring
+    for (var source in allSources) {
+      final productName = source['name']!.toLowerCase();
+      // Pisahkan nama produk per kata, abaikan kata pendek (< 4 huruf)
+      final productWords = productName
+          .split(RegExp(r'\s+'))
+          .where((w) => w.length >= 4)
+          .toList();
       
-      // Check for partial matches (at least 3 characters)
-      if (targetName.length >= 3) {
-        final words = cleanText.split(' ');
-        for (var word in words) {
-          if (word.length >= 3 && targetName.contains(word)) {
-            debugPrint('✓ Found partial match for ${target.name}: $word');
-            return target.name;
+      if (productWords.isEmpty) continue;
+      
+      for (var word in productWords) {
+        // Gunakan word boundary agar 'black' tidak cocok dengan 'blackberry'
+        final wordBoundaryPattern = RegExp(r'\b' + RegExp.escape(word) + r'\b');
+        if (wordBoundaryPattern.hasMatch(cleanText)) {
+          debugPrint('✓ Word match: "$word" from ${source['name']} found in text');
+          return source['id'];
+        }
+      }
+    }
+    
+    // 3. Fuzzy: cek apakah ada token di teks yang mirip nama produk (edit distance 1)
+    //    Berguna saat OCR salah baca 1 huruf (e.g. "Dayane" → "Dayana")
+    final textTokens = cleanText.split(RegExp(r'\s+'));
+    for (var source in allSources) {
+      final productName = source['name']!.toLowerCase().trim();
+      if (productName.length < 4) continue;
+      
+      // Hanya cek nama produk single-word (tidak ada spasi) untuk fuzzy
+      if (!productName.contains(' ')) {
+        for (var token in textTokens) {
+          if (token.length >= 4 && _levenshtein(token, productName) <= 1) {
+            debugPrint('✓ Fuzzy match: "$token" ≈ "${source['name']}"');
+            return source['id'];
           }
         }
       }
@@ -592,6 +611,34 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
     
     debugPrint('✗ No product name found in text');
     return null;
+  }
+  
+  /// Hitung Levenshtein distance antara dua string
+  int _levenshtein(String a, String b) {
+    if (a == b) return 0;
+    if (a.isEmpty) return b.length;
+    if (b.isEmpty) return a.length;
+    
+    final matrix = List.generate(
+      a.length + 1,
+      (i) => List.generate(b.length + 1, (j) => 0),
+    );
+    
+    for (int i = 0; i <= a.length; i++) matrix[i][0] = i;
+    for (int j = 0; j <= b.length; j++) matrix[0][j] = j;
+    
+    for (int i = 1; i <= a.length; i++) {
+      for (int j = 1; j <= b.length; j++) {
+        final cost = a[i - 1] == b[j - 1] ? 0 : 1;
+        matrix[i][j] = [
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + cost,
+        ].reduce((x, y) => x < y ? x : y);
+      }
+    }
+    
+    return matrix[a.length][b.length];
   }
   
   void _simulateLoadingProgress() {
@@ -645,63 +692,36 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
           _isLoadingModel = false;
           _isModelLoaded = true;
         });
+        // Pastikan timer scan berhenti
+        _stopImageRecognition();
       }
     });
   }
   
-  String? _findMatchingItem(String label) {
+  /// Cocokkan label generik ke produk spesifik — tidak dipakai lagi,
+  /// digantikan oleh text recognition via image stream.
+  // ignore: unused_element
+  String? _findMatchingItemByLabel(String label) {
     final lowerLabel = label.toLowerCase();
     
     debugPrint('Checking label: $lowerLabel');
     
-    // Match ANY visual content - be very aggressive
-    if (lowerLabel.contains('poster') || 
-        lowerLabel.contains('picture') ||
-        lowerLabel.contains('photo') ||
-        lowerLabel.contains('image') ||
-        lowerLabel.contains('paper') ||
-        lowerLabel.contains('document') ||
-        lowerLabel.contains('print') ||
-        lowerLabel.contains('text') ||
-        lowerLabel.contains('advertisement') ||
-        lowerLabel.contains('flyer')) {
-      debugPrint('✓ Detected VISUAL CONTENT - showing first image target');
-      // Return first image target if available
-      if (_imageTargets.isNotEmpty) {
-        return _imageTargets.first.name;
+    // Coba cocokkan label dengan keyword nama produk
+    for (var target in _imageTargets) {
+      final nameLower = target.name.toLowerCase();
+      final nameParts = nameLower.split(RegExp(r'[\s_]'));
+      
+      for (var part in nameParts) {
+        if (part.length >= 4 && lowerLabel.contains(part)) {
+          debugPrint('✓ Label keyword match: "$part" from ${target.name}');
+          return target.name;
+        }
       }
     }
     
-    // Match based on clothing keywords - very broad
-    if (lowerLabel.contains('dress') || 
-        lowerLabel.contains('clothing') ||
-        lowerLabel.contains('fashion') ||
-        lowerLabel.contains('apparel') ||
-        lowerLabel.contains('garment') ||
-        lowerLabel.contains('textile') ||
-        lowerLabel.contains('fabric') ||
-        lowerLabel.contains('wear') ||
-        lowerLabel.contains('outfit') ||
-        lowerLabel.contains('attire')) {
-      debugPrint('✓ Detected CLOTHING - showing first image target');
-      if (_imageTargets.isNotEmpty) {
-        return _imageTargets.first.name;
-      }
-    }
-    
-    // Match person/model - show fashion item
-    if (lowerLabel.contains('person') ||
-        lowerLabel.contains('woman') ||
-        lowerLabel.contains('model') ||
-        lowerLabel.contains('human') ||
-        lowerLabel.contains('face')) {
-      debugPrint('✓ Detected PERSON/MODEL - showing first image target');
-      if (_imageTargets.isNotEmpty) {
-        return _imageTargets.first.name;
-      }
-    }
-    
-    debugPrint('✗ No match found for: $lowerLabel');
+    // Fallback: jika tidak ada match spesifik, jangan auto-show item pertama.
+    // Biarkan user memilih manual dari list bawah.
+    debugPrint('✗ No specific product match for label: $lowerLabel');
     return null;
   }
   
@@ -1234,17 +1254,20 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
                             width: 2,
                           ),
                         ),
-                        child: Row(
+                        child: const Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(
-                              Icons.search,
-                              color: Color(0xFF00796B),
-                              size: 16,
+                            SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00796B)),
+                              ),
                             ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Scanning image...',
+                            SizedBox(width: 8),
+                            Text(
+                              'Scanning...',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 12,
@@ -1257,10 +1280,10 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
                     ),
                   ),
                 
-                // Detection result (show briefly after detection)
+                // Detection result (show below scanning indicator)
                 if (_lastDetectedLabel.isNotEmpty && !_isLoadingModel && !_isModelLoaded)
                   Positioned(
-                    top: MediaQuery.of(context).padding.top + 8,
+                    top: MediaQuery.of(context).padding.top + 56,
                     left: 0,
                     right: 0,
                     child: Center(
@@ -1297,6 +1320,29 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
                     ),
                   ),
                 
+                // Hint: arahkan kamera ke poster produk
+                if (!_isModelLoaded && !_isLoadingModel)
+                  Positioned(
+                    bottom: 195,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          '📷 Arahkan kamera ke poster/nama produk',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
 
                 // Close 3D Model button (when model is shown)
                 if (_selectedItemId != null)
@@ -1314,6 +1360,7 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
                               _isModelLoaded = false;
                               _modelLoadProgress = 0.0;
                             });
+                            _startImageRecognition();
                           },
                           style: IconButton.styleFrom(
                             backgroundColor: Colors.black54,
@@ -1330,6 +1377,7 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
                               _modelLoadProgress = 0.0;
                               _lastDetectedLabel = '';
                             });
+                            _startImageRecognition();
                           },
                           style: IconButton.styleFrom(
                             backgroundColor: const Color(0xFF00796B),
