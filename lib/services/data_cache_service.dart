@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'image_target_service.dart';
 import 'custom_model_service.dart';
 import 'image_hash_service.dart';
+import 'model_cache_service.dart';
 import '../config/supabase_config.dart';
 
 /// Service untuk caching data dari Supabase
@@ -68,6 +69,15 @@ class DataCacheService {
             .map((t) => (name: t.name, imageUrl: t.imageTarget))
             .toList();
         await ImageHashService().buildReferenceHashes(targets);
+
+        // Preload GLB models ke local cache
+        debugPrint('📥 Preloading GLB models...');
+        final models = imageTargets
+            .where((t) => t.modelUrl != null && t.modelUrl!.isNotEmpty)
+            .map((t) => (name: t.name, url: t.modelUrl!))
+            .toList();
+        // Jalankan di background — tidak perlu await agar app cepat ready
+        ModelCacheService().preloadModels(models).ignore();
       }
       
       // Fetch available models

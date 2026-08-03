@@ -7,6 +7,7 @@ import 'dart:io';
 import '../services/image_target_service.dart';
 import '../services/data_cache_service.dart';
 import '../services/image_hash_service.dart';
+import '../services/model_cache_service.dart';
 import '../config/supabase_config.dart';
 
 class ARCameraScreen extends StatefulWidget {
@@ -360,27 +361,34 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
     }
   }
   
-  // Helper function to get model URL
+  // Helper function to get model URL (local cache → remote fallback)
   String _getModelUrl(String? itemId) {
     if (itemId == null) return '';
-    
-    // First, try to find in image targets from Supabase
+
+    // Cari remote URL dulu dari image targets / fashion items
+    String remoteUrl = '';
+
     final target = _imageTargets.firstWhere(
       (t) => t.name == itemId,
       orElse: () => ImageTarget(name: '', imageTarget: ''),
     );
-    
-    if (target.name.isNotEmpty && target.modelUrl != null && target.modelUrl!.isNotEmpty) {
-      return target.modelUrl!;
+
+    if (target.name.isNotEmpty &&
+        target.modelUrl != null &&
+        target.modelUrl!.isNotEmpty) {
+      remoteUrl = target.modelUrl!;
+    } else {
+      final item = _fashionItems.firstWhere(
+        (item) => item['id'] == itemId || item['name'] == itemId,
+        orElse: () => {},
+      );
+      remoteUrl = item['model'] ?? '';
     }
-    
-    // Fallback to fashion items
-    final item = _fashionItems.firstWhere(
-      (item) => item['id'] == itemId || item['name'] == itemId,
-      orElse: () => {},
-    );
-    
-    return item['model'] ?? '';
+
+    if (remoteUrl.isEmpty) return '';
+
+    // Pakai local cache jika sudah tersedia, fallback ke remote
+    return ModelCacheService().resolveModelSrc(itemId, remoteUrl);
   }
   
   // Helper function to get all items (image targets + fashion items)
@@ -667,60 +675,50 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
   }
   
   void _simulateLoadingProgress() {
-    // Simulate realistic loading progress
     _modelLoadProgress = 0.0;
-    
-    // Stage 1: Downloading (0-30%)
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted && _isLoadingModel) {
-        setState(() => _modelLoadProgress = 0.15);
-      }
+
+    // Cek apakah model sudah di-cache lokal
+    final src = _getModelUrl(_selectedItemId);
+    final isLocal = src.startsWith('file://');
+
+    if (isLocal) {
+      // File lokal: WebView load dalam ~500ms, progress cepat
+      Future.delayed(const Duration(milliseconds: 150), () {
+        if (mounted && _isLoadingModel) setState(() => _modelLoadProgress = 0.5);
+      });
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (mounted && _isLoadingModel) setState(() => _modelLoadProgress = 0.85);
+      });
+      Future.delayed(const Duration(milliseconds: 700), () {
+        if (mounted) _onModelReady();
+      });
+    } else {
+      // Remote URL: progress lebih lambat
+      Future.delayed(const Duration(milliseconds: 400), () {
+        if (mounted && _isLoadingModel) setState(() => _modelLoadProgress = 0.15);
+      });
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        if (mounted && _isLoadingModel) setState(() => _modelLoadProgress = 0.40);
+      });
+      Future.delayed(const Duration(milliseconds: 2000), () {
+        if (mounted && _isLoadingModel) setState(() => _modelLoadProgress = 0.70);
+      });
+      Future.delayed(const Duration(milliseconds: 3000), () {
+        if (mounted && _isLoadingModel) setState(() => _modelLoadProgress = 0.90);
+      });
+      Future.delayed(const Duration(milliseconds: 4000), () {
+        if (mounted) _onModelReady();
+      });
+    }
+  }
+
+  void _onModelReady() {
+    setState(() {
+      _modelLoadProgress = 1.0;
+      _isLoadingModel = false;
+      _isModelLoaded = true;
     });
-    
-    Future.delayed(const Duration(milliseconds: 600), () {
-      if (mounted && _isLoadingModel) {
-        setState(() => _modelLoadProgress = 0.30);
-      }
-    });
-    
-    // Stage 2: Processing (30-70%)
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      if (mounted && _isLoadingModel) {
-        setState(() => _modelLoadProgress = 0.50);
-      }
-    });
-    
-    Future.delayed(const Duration(milliseconds: 1400), () {
-      if (mounted && _isLoadingModel) {
-        setState(() => _modelLoadProgress = 0.70);
-      }
-    });
-    
-    // Stage 3: Rendering (70-100%)
-    Future.delayed(const Duration(milliseconds: 1800), () {
-      if (mounted && _isLoadingModel) {
-        setState(() => _modelLoadProgress = 0.85);
-      }
-    });
-    
-    Future.delayed(const Duration(milliseconds: 2200), () {
-      if (mounted && _isLoadingModel) {
-        setState(() => _modelLoadProgress = 0.95);
-      }
-    });
-    
-    // Complete
-    Future.delayed(const Duration(milliseconds: 2500), () {
-      if (mounted) {
-        setState(() {
-          _modelLoadProgress = 1.0;
-          _isLoadingModel = false;
-          _isModelLoaded = true;
-        });
-        // Pastikan timer scan berhenti
-        _stopImageRecognition();
-      }
-    });
+    _stopImageRecognition();
   }
   
   /// Cocokkan label generik ke produk spesifik — tidak dipakai lagi,
