@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'image_target_service.dart';
 import 'custom_model_service.dart';
+import 'image_hash_service.dart';
 import '../config/supabase_config.dart';
 
 /// Service untuk caching data dari Supabase
@@ -59,6 +60,15 @@ class DataCacheService {
       final imageTargets = await _imageTargetService.getImageTargets();
       _cachedImageTargets = imageTargets;
       debugPrint('✅ Cached ${imageTargets.length} image targets');
+
+      // Build perceptual hashes untuk image matching (gambar polosan tanpa teks)
+      if (imageTargets.isNotEmpty) {
+        debugPrint('📥 Building image hashes...');
+        final targets = imageTargets
+            .map((t) => (name: t.name, imageUrl: t.imageTarget))
+            .toList();
+        await ImageHashService().buildReferenceHashes(targets);
+      }
       
       // Fetch available models
       debugPrint('📥 Fetching available models...');

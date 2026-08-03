@@ -6,6 +6,7 @@ import 'dart:async';
 import 'dart:io';
 import '../services/image_target_service.dart';
 import '../services/data_cache_service.dart';
+import '../services/image_hash_service.dart';
 import '../config/supabase_config.dart';
 
 class ARCameraScreen extends StatefulWidget {
@@ -490,41 +491,65 @@ INSYALLAH LANGSUNG PEMBAGIAN📌''',
   Future<void> _runOcr() async {
     _isProcessingImage = true;
     try {
-      // Ambil foto ke file temp — paling reliable di semua Android/iOS
       final xFile = await _cameraController!.takePicture();
       final inputImage = InputImage.fromFilePath(xFile.path);
 
+      // ── 1. OCR: cocokkan teks di gambar ──────────────────────────────────
       final result = await _textRecognizer.processImage(inputImage);
       final text = result.text;
 
-      // Hapus file temp
-      try { File(xFile.path).deleteSync(); } catch (_) {}
+      if (text.trim().isNotEmpty) {
+        debugPrint('OCR raw text:\n$text');
 
-      if (text.trim().isEmpty) {
-        debugPrint('OCR: no text found');
-        return;
+        // Update label UI
+        if (mounted) {
+          setState(() => _lastDetectedLabel = text.split('\n').first.trim());
+        }
+
+        final matched = _findMatchingItemFromText(text);
+        if (matched != null && matched != _selectedItemId) {
+          debugPrint('✓ OCR MATCHED: $matched');
+          try { File(xFile.path).deleteSync(); } catch (_) {}
+          _stopImageRecognition();
+          if (mounted) {
+            setState(() {
+              _selectedItemId = matched;
+              _isLoadingModel = true;
+              _isModelLoaded = false;
+              _modelLoadProgress = 0.0;
+              _lastDetectedLabel = matched.toUpperCase();
+            });
+            _simulateLoadingProgress();
+          }
+          return;
+        }
       }
 
-      debugPrint('OCR raw text:\n$text');
+      // ── 2. pHash: cocokkan gambar polosan (tanpa teks) ───────────────────
+      final hashService = ImageHashService();
+      if (hashService.isReady) {
+        final hashMatch = await hashService.findBestMatch(xFile.path);
+        try { File(xFile.path).deleteSync(); } catch (_) {}
 
-      // Update label UI
-      if (mounted) {
-        setState(() => _lastDetectedLabel = text.split('\n').first.trim());
+        if (hashMatch != null && hashMatch != _selectedItemId && mounted) {
+          debugPrint('✓ pHash MATCHED: $hashMatch');
+          _stopImageRecognition();
+          setState(() {
+            _selectedItemId = hashMatch;
+            _isLoadingModel = true;
+            _isModelLoaded = false;
+            _modelLoadProgress = 0.0;
+            _lastDetectedLabel = hashMatch.toUpperCase();
+          });
+          _simulateLoadingProgress();
+          return;
+        }
+      } else {
+        debugPrint('pHash not ready yet, skipping image match');
+        try { File(xFile.path).deleteSync(); } catch (_) {}
       }
 
-      final matched = _findMatchingItemFromText(text);
-      if (matched != null && matched != _selectedItemId && mounted) {
-        debugPrint('✓ MATCHED: $matched');
-        _stopImageRecognition();
-        setState(() {
-          _selectedItemId = matched;
-          _isLoadingModel = true;
-          _isModelLoaded = false;
-          _modelLoadProgress = 0.0;
-          _lastDetectedLabel = matched.toUpperCase();
-        });
-        _simulateLoadingProgress();
-      }
+      debugPrint('OCR: no text found');
     } catch (e) {
       debugPrint('OCR error: $e');
     } finally {
